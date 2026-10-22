@@ -6,9 +6,8 @@
     <title>نظام تسجيل الحضور الذكي - Geofenced Attendance System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- مكتبات توليد وقراءة الـ QR Code -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="https://unpkg.com/html5-qrcode"></script>
+    <!-- مكتبة قراءة الـ QR عبر الكاميرا -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -53,7 +52,7 @@
                 </div>
                 <div>
                     <h1 class="text-base md:text-lg font-bold text-slate-800 dark:text-white leading-tight">نظام الحضور الذكي</h1>
-                    <p class="text-[10px] md:text-xs text-slate-500 dark:text-slate-400">نظام التحقق المزدوج (GPS + QR المتغير)</p>
+                    <p class="text-[10px] md:text-xs text-slate-500 dark:text-slate-400">التحقق المزدوج الدقيق (GPS + Dynamic QR)</p>
                 </div>
             </div>
 
@@ -158,7 +157,7 @@
                 <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200 dark:border-slate-700">
                     <h3 class="text-base md:text-lg font-bold mb-3 flex items-center space-x-2 space-x-reverse text-slate-800 dark:text-white">
                         <i class="fa-solid fa-circle-play text-brand-600"></i>
-                        <span>بدء جلسة حضور جديدة (GPS + QR المتغير)</span>
+                        <span>بدء جلسة حضور جديدة (GPS + Dynamic QR)</span>
                     </h3>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
@@ -201,9 +200,17 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
                         <!-- Dynamic QR Code Display -->
                         <div class="bg-white p-4 rounded-2xl flex flex-col items-center justify-center text-slate-900 shadow-inner">
-                            <span class="text-xs font-bold text-slate-500 mb-2">اعرض هذا الرمز على شاشة القاعة (يتغير كل 5 ثوانٍ):</span>
-                            <div id="qrcode" class="p-2 bg-white rounded-xl shadow"></div>
-                            <span class="text-[10px] font-bold text-emerald-600 mt-2"><i class="fa-solid fa-arrows-rotate animate-spin ml-1"></i> يتم تحديث الرمز حياً...</span>
+                            <span class="text-xs font-bold text-slate-600 mb-2">اعرض هذا الرمز على شاشة القاعة (يتغير تلقائياً كل 5 ثوانٍ):</span>
+                            
+                            <!-- صورة الـ QR الديناميكية المباشرة -->
+                            <div class="p-3 bg-slate-50 rounded-2xl border-2 border-brand-500 flex flex-col items-center">
+                                <img id="dynamicQrImg" src="" alt="رمز QR المباشر" class="w-48 h-48 object-contain">
+                                <span id="dynamicCodeLabel" class="text-[10px] font-mono font-bold text-slate-500 mt-2 bg-slate-200 px-2 py-0.5 rounded">CODE: --</span>
+                            </div>
+
+                            <span class="text-[10px] font-bold text-emerald-600 mt-2 flex items-center">
+                                <i class="fa-solid fa-arrows-rotate animate-spin ml-1"></i> يتغير الكود المباشر تلقائياً لمنع التلاعب
+                            </span>
                         </div>
 
                         <!-- Live Attendance Stream -->
@@ -214,7 +221,7 @@
                                         <th class="p-2">الطالب</th>
                                         <th class="p-2">الكود</th>
                                         <th class="p-2">الوقت</th>
-                                        <th class="p-2">طريقة الحضور</th>
+                                        <th class="p-2">الطريقة</th>
                                     </tr>
                                 </thead>
                                 <tbody id="liveFeedBody" class="divide-y divide-slate-800">
@@ -438,7 +445,17 @@
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">وجه كاميرا هاتف نحو الشاشة لتأكيد وجودك داخل الغرفة</p>
             </div>
 
+            <!-- الكاميرا المباشرة -->
             <div id="qr-reader" class="overflow-hidden rounded-2xl border-2 border-dashed border-brand-500 bg-slate-100 dark:bg-slate-900 min-h-[220px]"></div>
+
+            <!-- خيار إدخال الرمز يدوياً في حالة عدم عمل الكاميرا -->
+            <div class="border-t border-slate-200 dark:border-slate-700 pt-3 text-right">
+                <label class="block text-[11px] font-bold text-slate-500 mb-1">أو ادخل الكود المعروض أسفل الرمز على الشاشة:</label>
+                <div class="flex gap-2">
+                    <input type="text" id="manualTokenInput" placeholder="ادخل الكود..." class="w-full bg-slate-50 dark:bg-slate-700 border rounded-xl px-3 py-1.5 text-xs outline-none">
+                    <button type="button" onclick="verifyManualToken()" class="bg-brand-600 text-white font-bold text-xs px-3 py-1.5 rounded-xl">تأكيد</button>
+                </div>
+            </div>
 
             <p id="scannerFeedback" class="text-xs font-bold text-amber-500 bg-amber-500/10 p-2 rounded-xl hidden"></p>
         </div>
@@ -516,7 +533,6 @@
         let soundEnabled = true;
         let html5QrScanner = null;
         let qrGeneratorInterval = null;
-        let qrcodeObj = null;
 
         function initAudio() {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -764,17 +780,22 @@
             alert("تم فتح الجلسة وبدء توليد رمز QR المباشر!");
         }
 
+        // توليد الـ QR الديناميكي بشكل حقيقي كل 5 ثوانٍ
         function startDynamicQRGenerator() {
             if (qrGeneratorInterval) clearInterval(qrGeneratorInterval);
-            const qrContainer = document.getElementById('qrcode');
-            qrContainer.innerHTML = "";
-            qrcodeObj = new QRCode(qrContainer, { width: 180, height: 180 });
 
             const updateQR = () => {
                 if (!state.activeLecture) return;
                 const timeBlock = Math.floor(Date.now() / 5000);
-                state.currentDynamicToken = `TOKEN_${state.activeLecture.id}_${timeBlock}`;
-                qrcodeObj.makeCode(state.currentDynamicToken);
+                const shortCode = Math.abs((timeBlock * 15485863) % 1000000).toString().padStart(6, '0');
+                state.currentDynamicToken = shortCode;
+
+                const qrImg = document.getElementById('dynamicQrImg');
+                const codeLabel = document.getElementById('dynamicCodeLabel');
+                
+                // توليد الـ QR ديناميكياً باستخدام API موثوقة
+                qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${shortCode}`;
+                codeLabel.innerText = `CODE: ${shortCode}`;
             };
 
             updateQR();
@@ -789,7 +810,6 @@
             document.getElementById('adminActiveCard').classList.add('hidden');
         }
 
-        // المعادلة الحسابية الصارمة لحساب المسافة الجغرافية بالامتار
         function calculateDistance(lat1, lon1, lat2, lon2) {
             const R = 6371000;
             const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -843,7 +863,7 @@
                         );
 
                         if (accuracy > 15) {
-                            feedback.innerText = `دقة إشارة الهاتف ضعيفة (${Math.round(accuracy)}m). يرجى الاقتراب من المحاضر للتحقق الصارم من وجودك داخل الغرفة.`;
+                            feedback.innerText = `دقة إشارة الهاتف ضعيفة (${Math.round(accuracy)}m). يرجى الاقتراب من المحاضر أو مسح رمز הـ QR المعروض.`;
                             feedback.className = "text-xs text-center font-bold bg-rose-500/10 text-rose-500 p-2.5 rounded-lg mt-2";
                             return;
                         }
@@ -870,7 +890,7 @@
                         renderLiveFeed();
                     },
                     (err) => {
-                        feedback.innerText = "عذراً، يتعذر التقاط إشارة دقيقة. جرب استخدام مسح رمز الـ QR بدلاً من ذلك.";
+                        feedback.innerText = "تعذر التقاط موقعك الجغرافي. يرجى مسح رمز QR القاعة المباشر بدلاً من ذلك.";
                         feedback.className = "text-xs text-center font-bold bg-rose-500/10 text-rose-500 p-2.5 rounded-lg mt-2";
                     },
                     { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
@@ -884,14 +904,18 @@
                 return;
             }
             document.getElementById('scannerModal').classList.remove('hidden');
-            html5QrScanner = new Html5Qrcode("qr-reader");
-            html5QrScanner.start(
-                { facingMode: "environment" },
-                { fps: 10, qrbox: { width: 220, height: 220 } },
-                onScanSuccess
-            ).catch(err => {
-                alert("تعذر فتح كاميرا الهاتف. يرجى السماح بالصلاحيات.");
-            });
+            document.getElementById('scannerFeedback').classList.add('hidden');
+
+            if (typeof Html5Qrcode !== "undefined") {
+                html5QrScanner = new Html5Qrcode("qr-reader");
+                html5QrScanner.start(
+                    { facingMode: "environment" },
+                    { fps: 10, qrbox: { width: 200, height: 200 } },
+                    onScanSuccess
+                ).catch(err => {
+                    console.log("استخدم الخيار اليدوي بدلاً من الكاميرا.");
+                });
+            }
         }
 
         function closeScannerModal() {
@@ -906,41 +930,47 @@
             }
         }
 
-        function onScanSuccess(decodedText) {
+        function processSuccessfulQRScan(method) {
             const currentStudent = state.students.find(s => s.id === state.activeStudentId);
-            if (!currentStudent) {
-                alert("يرجى تسجيل بيانات الطالب أولاً!");
-                closeScannerModal();
-                openStudentLoginModal();
-                return;
-            }
+            const timestamp = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+            
+            state.attendanceRecords.push({
+                lectureId: state.activeLecture.id,
+                studentId: currentStudent.id,
+                timestamp: timestamp,
+                distance: 0,
+                status: 'حاضر',
+                method: method
+            });
 
-            const currentBlock = Math.floor(Date.now() / 5000);
-            const validToken1 = `TOKEN_${state.activeLecture.id}_${currentBlock}`;
-            const validToken2 = `TOKEN_${state.activeLecture.id}_${currentBlock - 1}`;
+            localStorage.setItem('app_attendance_db', JSON.stringify(state.attendanceRecords));
+            closeScannerModal();
+            
+            const feedback = document.getElementById('attendanceFeedback');
+            feedback.classList.remove('hidden');
+            feedback.innerText = "تم التحقق المباشر عبر الـ QR وتسجيل الحضور بنجاح!";
+            feedback.className = "text-xs text-center font-bold bg-emerald-500/10 text-emerald-400 p-2.5 rounded-lg mt-2";
+            renderLiveFeed();
+        }
 
-            if (decodedText === validToken1 || decodedText === validToken2) {
-                const timestamp = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-                state.attendanceRecords.push({
-                    lectureId: state.activeLecture.id,
-                    studentId: currentStudent.id,
-                    timestamp: timestamp,
-                    distance: 0,
-                    status: 'حاضر',
-                    method: 'مسح QR القاعة'
-                });
-
-                localStorage.setItem('app_attendance_db', JSON.stringify(state.attendanceRecords));
-                closeScannerModal();
-                
-                const feedback = document.getElementById('attendanceFeedback');
-                feedback.classList.remove('hidden');
-                feedback.innerText = "تم التحقق المباشر عبر الـ QR وتسجيل الحضور بنجاح!";
-                feedback.className = "text-xs text-center font-bold bg-emerald-500/10 text-emerald-400 p-2.5 rounded-lg mt-2";
-                renderLiveFeed();
+        function onScanSuccess(decodedText) {
+            if (decodedText === state.currentDynamicToken) {
+                processSuccessfulQRScan('مسح QR القاعة');
             } else {
                 const fb = document.getElementById('scannerFeedback');
-                fb.innerText = "رمز QR غير صالح أو انتهت صلاحيته! تأكد من التوجيه نحو الشاشة مباشرة.";
+                fb.innerText = "رمز غير صحيح أو انتهت صلاحيته! تأكد من التوجيه نحو الشاشة مباشرة.";
+                fb.classList.remove('hidden');
+            }
+        }
+
+        function verifyManualToken() {
+            const inputVal = document.getElementById('manualTokenInput').value.trim();
+            if (inputVal === state.currentDynamicToken) {
+                processSuccessfulQRScan('رمز QR اليدوي');
+                document.getElementById('manualTokenInput').value = "";
+            } else {
+                const fb = document.getElementById('scannerFeedback');
+                fb.innerText = "الكود المدخل غير صحيح أو انتهت صلاحيته!";
                 fb.classList.remove('hidden');
             }
         }
