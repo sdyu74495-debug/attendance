@@ -74,7 +74,7 @@
 
         <!-- ==================== STUDENT VIEW ==================== -->
         <div id="studentSection" class="space-y-4 md:space-y-6 no-print">
-            <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 md:p-5 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 md:p-5 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 relative">
                 <div class="flex items-center space-x-3 space-x-reverse">
                     <div class="w-10 h-10 md:w-12 md:h-12 bg-brand-100 dark:bg-slate-700 text-brand-600 dark:text-brand-400 rounded-2xl flex items-center justify-center font-bold text-lg md:text-xl">
                         <i class="fa-solid fa-user-graduate"></i>
@@ -124,19 +124,27 @@
         <div id="adminSection" class="hidden space-y-6">
 
             <!-- Admin Nav Tabs -->
-            <div class="no-print bg-white dark:bg-slate-800 p-2 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-wrap gap-2">
-                <button onclick="switchAdminTab('sessionTab')" id="tabBtn-sessionTab" class="admin-tab-btn active px-3.5 py-2 rounded-xl text-xs font-bold bg-brand-600 text-white shadow">
-                    <i class="fa-solid fa-tower-broadcast ml-1"></i> إدارة الجلسة الحالية
-                </button>
-                <button onclick="switchAdminTab('studentsTab')" id="tabBtn-studentsTab" class="admin-tab-btn px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
-                    <i class="fa-solid fa-id-card-clip ml-1"></i> الاستعلام والتقرير الفردي
-                </button>
-                <button onclick="switchAdminTab('reportsTab')" id="tabBtn-reportsTab" class="admin-tab-btn px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
-                    <i class="fa-solid fa-print ml-1"></i> الكشوف الجاهزة للطباعة
-                </button>
-                <button onclick="logoutAdmin()" class="mr-auto px-3 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30">
-                    <i class="fa-solid fa-right-from-bracket ml-1"></i> خروج
-                </button>
+            <div class="no-print bg-white dark:bg-slate-800 p-2 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="switchAdminTab('sessionTab')" id="tabBtn-sessionTab" class="admin-tab-btn active px-3.5 py-2 rounded-xl text-xs font-bold bg-brand-600 text-white shadow">
+                        <i class="fa-solid fa-tower-broadcast ml-1"></i> إدارة الجلسة الحالية
+                    </button>
+                    <button onclick="switchAdminTab('studentsTab')" id="tabBtn-studentsTab" class="admin-tab-btn px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                        <i class="fa-solid fa-id-card-clip ml-1"></i> الاستعلام والتقرير الفردي
+                    </button>
+                    <button onclick="switchAdminTab('reportsTab')" id="tabBtn-reportsTab" class="admin-tab-btn px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                        <i class="fa-solid fa-print ml-1"></i> الكشوف الجاهزة للطباعة
+                    </button>
+                </div>
+                <div class="flex items-center space-x-2 space-x-reverse mr-auto">
+                    <button onclick="logoutAdmin()" class="px-3 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30">
+                        <i class="fa-solid fa-right-from-bracket ml-1"></i> خروج
+                    </button>
+                    <!-- زر إغلاق X للرجوع لصفحة الطالب -->
+                    <button onclick="switchRole('student')" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition" title="إغلاق والرجوع لصفحة الطالب">
+                        <i class="fa-solid fa-xmark text-sm"></i>
+                    </button>
+                </div>
             </div>
 
             <!-- TAB 1: Session Management -->
@@ -222,13 +230,18 @@
                     </div>
                 </div>
 
-                <div id="detailedReportContainer" class="hidden bg-white dark:bg-slate-800 rounded-2xl p-5 md:p-8 shadow-sm border border-slate-200 dark:border-slate-700 space-y-5 print-container">
+                <div id="detailedReportContainer" class="hidden bg-white dark:bg-slate-800 rounded-2xl p-5 md:p-8 shadow-sm border border-slate-200 dark:border-slate-700 space-y-5 print-container relative">
+                    <!-- زر X لإغلاق التقرير الفردي والرجوع للجدول -->
+                    <button onclick="closeDetailedReport()" class="no-print absolute top-4 left-4 w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition" title="إغلاق التقرير">
+                        <i class="fa-solid fa-xmark text-sm"></i>
+                    </button>
+
                     <div class="border-b-2 border-slate-800 pb-3 flex justify-between items-center">
                         <div>
                             <h2 class="text-xl md:text-2xl font-black text-slate-900 dark:text-white">تقرير حضور وغياب طالب فردي</h2>
                             <p class="text-[10px] md:text-xs font-bold text-slate-600 dark:text-slate-400">السجل الأكاديمي الرسمي</p>
                         </div>
-                        <div class="text-left text-[10px] md:text-xs text-slate-500">
+                        <div class="text-left text-[10px] md:text-xs text-slate-500 pl-8">
                             <p>تاريخ التقرير: <span id="repPrintDate">--</span></p>
                             <p>حد الغياب الأقصى: <span class="font-bold text-rose-600">75%</span></p>
                         </div>
@@ -241,7 +254,7 @@
                         </div>
                         <div class="no-print flex flex-wrap gap-2 w-full md:w-auto">
                             <button id="repUnlinkBtn" class="bg-amber-500 text-white text-xs font-bold px-3 py-2 rounded-xl transition hover:bg-amber-600">فك جهاز الطالب</button>
-                            <button id="repDeleteBtn" class="bg-rose-600 text-white text-xs font-bold px-3 py-2 rounded-xl transition hover:bg-rose-700">حذف الطالب</button>
+                            <button id="repDeleteBtn" class="bg-rose-600 text-white text-xs font-bold px-3 py-2 rounded-xl transition hover:bg-rose-700">حذف الطالب بالكامل</button>
                             <button onclick="window.print()" class="bg-brand-600 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center space-x-1 space-x-reverse">
                                 <i class="fa-solid fa-print"></i>
                                 <span>طباعة التقرير</span>
@@ -403,7 +416,12 @@
 
     <!-- Student Registration Modal -->
     <div id="studentRegisterModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
-        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4 relative">
+            <!-- زر إغلاق X للنافذة المنبثقة -->
+            <button onclick="closeStudentLoginModal()" class="absolute top-3 left-3 w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition">
+                <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
+
             <div class="text-center">
                 <div class="w-12 h-12 bg-brand-100 text-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-2">
                     <i class="fa-solid fa-id-card text-xl"></i>
@@ -431,7 +449,12 @@
 
     <!-- Admin Password Modal -->
     <div id="adminAuthModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
-        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-xs w-full p-5 shadow-2xl border border-slate-200 dark:border-slate-700">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-xs w-full p-5 shadow-2xl border border-slate-200 dark:border-slate-700 relative">
+            <!-- زر X لإغلاق نافذة كلمة المرور -->
+            <button onclick="cancelAdminAuth()" class="absolute top-3 left-3 w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center transition">
+                <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
+
             <div class="text-center mb-3">
                 <div class="w-10 h-10 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-1">
                     <i class="fa-solid fa-lock text-lg"></i>
@@ -521,6 +544,15 @@
 
         function openStudentLoginModal() {
             document.getElementById('studentRegisterModal').classList.remove('hidden');
+        }
+
+        function closeStudentLoginModal() {
+            document.getElementById('studentRegisterModal').classList.add('hidden');
+        }
+
+        function closeDetailedReport() {
+            document.getElementById('detailedReportContainer').classList.add('hidden');
+            document.getElementById('studentSearchInput').value = '';
         }
 
         function handleStudentRegisterSubmit(e) {
@@ -698,6 +730,13 @@
 
             const currentStudent = state.students.find(s => s.id === state.activeStudentId);
 
+            if (!currentStudent) {
+                feedback.innerText = "برجاء تسجيل بياناتك أولاً!";
+                feedback.className = "text-xs text-center font-bold bg-rose-500/10 text-rose-500 p-2.5 rounded-lg mt-2";
+                openStudentLoginModal();
+                return;
+            }
+
             const existing = state.attendanceRecords.find(r => r.lectureId === state.activeLecture.id && r.studentId === currentStudent.id && r.status === 'حاضر');
             if (existing) {
                 feedback.innerText = "لقد قمت بتسجيل حضورك بالفعل لهذه المحاضرة!";
@@ -831,23 +870,43 @@
             }).join('');
         }
 
-        // DELETE STUDENT FUNCTION
+        // COMPLETE STUDENT DELETE & RESET FUNCTION
         function deleteStudent(studentId) {
             const student = state.students.find(s => s.id === studentId);
             if (!student) return;
 
-            if (confirm(`تأكيد: هل تريد حذف الطالب (${student.name}) وسجلاته نهائياً؟`)) {
+            if (confirm(`تأكيد: هل تريد حذف الطالب (${student.name}) بالكامل وتفريغ اقتران الموبايل ليتمكن من التسجيل من جديد؟`)) {
+                
+                // 1. مسح الطالب من مصفوفة الطلاب
                 state.students = state.students.filter(s => s.id !== studentId);
+                
+                // 2. مسح كافة سجلات حضور الطالب
                 state.attendanceRecords = state.attendanceRecords.filter(r => r.studentId !== studentId);
 
+                // 3. مسح اقتران الموبايل المخزن لو كان نفس جهاز الطالب
+                const boundCode = localStorage.getItem('app_bound_student_code');
+                if (boundCode === student.code) {
+                    localStorage.removeItem('app_bound_student_code');
+                }
+
+                // 4. تفريغ الطالب النشط لو كان هو نفسه المسجل
+                if (state.activeStudentId === studentId) {
+                    state.activeStudentId = null;
+                    document.getElementById('studentDisplayName').innerText = "--";
+                    document.getElementById('studentDisplayCode').innerText = "الكود الجامعي: --";
+                }
+
+                // 5. حفظ التعديلات في local storage
                 localStorage.setItem('app_students_db', JSON.stringify(state.students));
                 localStorage.setItem('app_attendance_db', JSON.stringify(state.attendanceRecords));
 
+                // 6. تحديث الجداول والواجهة
                 document.getElementById('detailedReportContainer').classList.add('hidden');
                 document.getElementById('studentSearchInput').value = '';
                 renderAllStudentsTable();
                 renderPrintableSheet();
-                alert("تم حذف الطالب وسجلاته بنجاح!");
+                
+                alert("تم حذف الطالب وحسابه واقتران جهازه بنجاح! يمكنه الآن التسجيل من جديد.");
             }
         }
 
