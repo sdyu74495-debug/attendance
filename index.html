@@ -196,10 +196,10 @@
                             <span class="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-500/30">الجلسة النشطة المباشرة</span>
                             <h3 id="adminActiveTitle" class="text-lg font-bold mt-1">--</h3>
                         </div>
-                        <!-- زرار إنهاء المحاضرة الفوري -->
-                        <button onclick="cancelActiveLecture()" class="bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center gap-1">
+                        <!-- زرار إغلاق المحاضرة الفوري الشامل لكل الأجهزة -->
+                        <button onclick="cancelActiveLecture()" class="bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center gap-1.5">
                             <i class="fa-solid fa-power-off"></i>
-                            <span>إنهاء وإغلاق الجلسة فوراً</span>
+                            <span>إغلاق المحاضرة فوراً من كل الهواتف</span>
                         </button>
                     </div>
 
@@ -335,7 +335,7 @@
                     <div class="flex justify-between items-center mb-2">
                         <h3 class="text-sm font-bold text-slate-800 dark:text-white">قائمة جميع الطلاب المسجلين</h3>
                         <button onclick="clearAllDataAndReset()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition">
-                            <i class="fa-solid fa-trash-can ml-1"></i> مسح جميع بيانات الطلاب نهائياً
+                            <i class="fa-solid fa-trash-can ml-1"></i> مسح جميع بيانات السيرفر نهائياً
                         </button>
                     </div>
                     <div class="overflow-x-auto">
@@ -440,7 +440,7 @@
     <div id="scannerModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden no-print">
         <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4 relative text-center">
             
-            <!-- زر الإغلاق المباشر المعدل لتفادي أي تهنيج -->
+            <!-- زرار الإغلاق المباشر والمضمون 100% بدون أي تعليق -->
             <button type="button" onclick="closeScannerModal()" class="absolute top-3 left-3 w-10 h-10 rounded-full bg-slate-200 hover:bg-rose-600 hover:text-white transition flex items-center justify-center shadow-lg font-bold text-slate-900 z-50 cursor-pointer" title="إغلاق">
                 <i class="fa-solid fa-xmark text-xl"></i>
             </button>
@@ -545,7 +545,7 @@
             firebase.initializeApp(firebaseConfig);
             db = firebase.database();
         } catch(e) {
-            console.log("خطأ في الفايربيز:", e);
+            console.log("خطأ بالفايربيز:", e);
         }
 
         let audioCtx = null;
@@ -602,11 +602,11 @@
             listenToRealtimeCloudUpdates();
         };
 
-        // الربط المباشر والشامل مع قاعدة البيانات السحابية لتوحيد الرؤية لدى الجميع
+        // الربط المباشر الموحد لجميع الهواتف والكمبيوتر مع السيرفر السحابي
         function listenToRealtimeCloudUpdates() {
             if (!db) return;
 
-            // 1. مزامنة الطلاب
+            // 1. مزامنة بيانات الطلاب من السيرفر فورياً
             db.ref('students').on('value', (snapshot) => {
                 const stds = snapshot.val();
                 state.students = stds ? Object.values(stds) : [];
@@ -615,7 +615,7 @@
                 renderPrintableSheet();
             });
 
-            // 2. مزامنة سجل المحاضرات
+            // 2. مزامنة تاريخ المحاضرات من السيرفر فورياً
             db.ref('lecturesHistory').on('value', (snapshot) => {
                 const lecs = snapshot.val();
                 state.lecturesHistory = lecs ? Object.values(lecs).reverse() : [];
@@ -623,7 +623,7 @@
                 renderPrintableSheet();
             });
 
-            // 3. مزامنة الجلسة النشطة الحالية
+            // 3. المزامنة اللحظية للجلسة المباشرة
             db.ref('activeLecture').on('value', (snapshot) => {
                 const activeLec = snapshot.val();
                 state.activeLecture = activeLec;
@@ -643,7 +643,7 @@
                 }
             });
 
-            // 4. مزامنة الـ QR اللحظي
+            // 4. مزامنة كود الـ QR المتغير لحظياً
             db.ref('currentDynamicToken').on('value', (snapshot) => {
                 const token = snapshot.val();
                 if (token) {
@@ -664,7 +664,7 @@
                 }
             });
 
-            // 5. مزامنة الحضور اللحظي
+            // 5. مزامنة سجلات الحضور المباشرة
             db.ref('attendanceRecords').on('value', (snapshot) => {
                 const records = snapshot.val();
                 state.attendanceRecords = records ? Object.values(records) : [];
@@ -916,7 +916,7 @@
             `);
         }
 
-        // إلغاء الجلسة وحذفها فورياً من الفايربيز لإخفائها من أجهزة الجميع
+        // إلغاء المحاضرة ومسحها فوراً من السيرفر لإخفائها من أجهزة كافة الطلاب
         function cancelActiveLecture() {
             if (qrGeneratorInterval) clearInterval(qrGeneratorInterval);
             if (dedicatedQrWindow && !dedicatedQrWindow.closed) dedicatedQrWindow.close();
@@ -930,7 +930,7 @@
             document.getElementById('noActiveLectureState').classList.remove('hidden');
             document.getElementById('activeLectureState').classList.add('hidden');
             document.getElementById('adminActiveCard').classList.add('hidden');
-            alert("تم إنهاء الجلسة المباشرة فوراً من أجهزة كافة الطلاب!");
+            alert("تم إغلاق المحاضرة فوراً من كل أجهزة الطلاب!");
         }
 
         function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -1021,7 +1021,7 @@
             }
         }
 
-        // فتح الكاميرا بآلية آمنة لمنع تعليق زرار (X)
+        // فتح الكاميرا بآلية آمنة لمنع تعليق زرار الإغلاق
         function openScannerModal() {
             if (!state.activeLecture) {
                 alert("لا توجد جلسة حضور نشطة حالياً!");
@@ -1038,7 +1038,7 @@
                         { fps: 10, qrbox: { width: 200, height: 200 } },
                         onScanSuccess
                     ).catch(err => {
-                        console.log("تعذر تشغيل الكاميرا تلقائياً، يمكنك إدخال الكود يدويًا.");
+                        console.log("تعذر فتح الكاميرا تلقائياً، يمكنك إدخال الكود يدوياً.");
                     });
                 } catch(e) {
                     console.log("خطأ بالكاميرا.");
@@ -1046,7 +1046,7 @@
             }
         }
 
-        // إغلاق النافذة بأمان مهما كانت حالة الكاميرا
+        // إغلاق نافذة الـ QR فوراً بدون أي تهنيج لزرار X
         function closeScannerModal() {
             const modal = document.getElementById('scannerModal');
             if (html5QrScanner) {
@@ -1195,7 +1195,7 @@
             const student = state.students.find(s => s.id === studentId);
             if (!student) return;
 
-            if (confirm(`تأكيد: هل تريد حذف الطالب (${student.name}) بالكامل لتفريع السيرفر؟`)) {
+            if (confirm(`تأكيد: هل تريد حذف الطالب (${student.name}) بالكامل وتفريغ السيرفر؟`)) {
                 if (db) db.ref('students/' + studentId).remove();
 
                 const boundCode = localStorage.getItem('app_bound_student_code');
@@ -1210,7 +1210,7 @@
         }
 
         function clearAllDataAndReset() {
-            if (confirm("تأكيد شمول: هل تريد مسح جميع بيانات الطلاب والمحاضرات نهائياً من السيرفر؟")) {
+            if (confirm("تأكيد شمول: هل تريد مسح جميع بيانات الطلاب والمحاضرات نهائياً من السيرفر السحابي؟")) {
                 if (db) {
                     db.ref('students').remove();
                     db.ref('attendanceRecords').remove();
@@ -1218,7 +1218,7 @@
                     db.ref('activeLecture').remove();
                 }
                 localStorage.clear();
-                alert("تم تفريغ كافة البيانات من السيرفر بنجاح!");
+                alert("تم تفريغ كافة بيانات السيرفر بنجاح!");
             }
         }
 
