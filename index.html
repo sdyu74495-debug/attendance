@@ -196,7 +196,11 @@
                             <span class="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-500/30">الجلسة النشطة المباشرة</span>
                             <h3 id="adminActiveTitle" class="text-lg font-bold mt-1">--</h3>
                         </div>
-                        <button onclick="cancelActiveLecture()" class="bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold px-3 py-2 rounded-lg transition">إغلاق الجلسة</button>
+                        <!-- زرار إنهاء المحاضرة الفوري -->
+                        <button onclick="cancelActiveLecture()" class="bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center gap-1">
+                            <i class="fa-solid fa-power-off"></i>
+                            <span>إنهاء وإغلاق الجلسة فوراً</span>
+                        </button>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
@@ -436,8 +440,9 @@
     <div id="scannerModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden no-print">
         <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4 relative text-center">
             
-            <button type="button" onclick="closeScannerModal()" class="absolute top-3 left-3 w-9 h-9 rounded-full bg-slate-200 hover:bg-rose-500 hover:text-white transition flex items-center justify-center shadow font-bold text-slate-900 z-50 cursor-pointer">
-                <i class="fa-solid fa-xmark text-lg"></i>
+            <!-- زر الإغلاق المباشر المعدل لتفادي أي تهنيج -->
+            <button type="button" onclick="closeScannerModal()" class="absolute top-3 left-3 w-10 h-10 rounded-full bg-slate-200 hover:bg-rose-600 hover:text-white transition flex items-center justify-center shadow-lg font-bold text-slate-900 z-50 cursor-pointer" title="إغلاق">
+                <i class="fa-solid fa-xmark text-xl"></i>
             </button>
             
             <div>
@@ -525,7 +530,6 @@
 
     <!-- Application Script Logic -->
     <script>
-        // إعدادات Firebase الخاصة بمشروعك الحقيقي
         const firebaseConfig = {
             apiKey: "AIzaSyCrajT5UTM7vyTicRHwajaKYhqwDTXTpi8",
             authDomain: "amr1-60aa8.firebaseapp.com",
@@ -536,13 +540,12 @@
             appId: "1:831137627248:web:ad98adb7dd0274d73748b5"
         };
 
-        // تهيئة قاعدة البيانات السحابية
         let db = null;
         try {
             firebase.initializeApp(firebaseConfig);
             db = firebase.database();
         } catch(e) {
-            console.log("خطأ في الاتصال بالفياربيز:", e);
+            console.log("خطأ في الفايربيز:", e);
         }
 
         let audioCtx = null;
@@ -589,23 +592,38 @@
             activeLecture: null,
             adminGpsLocation: null,
             currentDynamicToken: "",
-            students: JSON.parse(localStorage.getItem('app_students_db')) || [],
-            lecturesHistory: JSON.parse(localStorage.getItem('app_lectures_db')) || [],
-            attendanceRecords: JSON.parse(localStorage.getItem('app_attendance_db')) || []
+            students: [],
+            lecturesHistory: [],
+            attendanceRecords: []
         };
 
         window.onload = function() {
-            checkExistingStudentSession();
-            renderAllStudentsTable();
-            populateReportLectureSelector();
             document.getElementById('repPrintDate').innerText = new Date().toLocaleDateString('ar-EG');
             listenToRealtimeCloudUpdates();
         };
 
-        // البث المباشر بين الأدمن والطلاب
+        // الربط المباشر والشامل مع قاعدة البيانات السحابية لتوحيد الرؤية لدى الجميع
         function listenToRealtimeCloudUpdates() {
             if (!db) return;
 
+            // 1. مزامنة الطلاب
+            db.ref('students').on('value', (snapshot) => {
+                const stds = snapshot.val();
+                state.students = stds ? Object.values(stds) : [];
+                checkExistingStudentSession();
+                renderAllStudentsTable();
+                renderPrintableSheet();
+            });
+
+            // 2. مزامنة سجل المحاضرات
+            db.ref('lecturesHistory').on('value', (snapshot) => {
+                const lecs = snapshot.val();
+                state.lecturesHistory = lecs ? Object.values(lecs).reverse() : [];
+                populateReportLectureSelector();
+                renderPrintableSheet();
+            });
+
+            // 3. مزامنة الجلسة النشطة الحالية
             db.ref('activeLecture').on('value', (snapshot) => {
                 const activeLec = snapshot.val();
                 state.activeLecture = activeLec;
@@ -625,6 +643,7 @@
                 }
             });
 
+            // 4. مزامنة الـ QR اللحظي
             db.ref('currentDynamicToken').on('value', (snapshot) => {
                 const token = snapshot.val();
                 if (token) {
@@ -645,15 +664,13 @@
                 }
             });
 
+            // 5. مزامنة الحضور اللحظي
             db.ref('attendanceRecords').on('value', (snapshot) => {
                 const records = snapshot.val();
-                if (records) {
-                    state.attendanceRecords = Object.values(records);
-                    localStorage.setItem('app_attendance_db', JSON.stringify(state.attendanceRecords));
-                    renderLiveFeed();
-                    renderAllStudentsTable();
-                    renderPrintableSheet();
-                }
+                state.attendanceRecords = records ? Object.values(records) : [];
+                renderLiveFeed();
+                renderAllStudentsTable();
+                renderPrintableSheet();
             });
         }
 
@@ -665,8 +682,6 @@
                     state.activeStudentId = found.id;
                     loadStudentData();
                     return;
-                } else {
-                    localStorage.removeItem('app_bound_student_code');
                 }
             }
             openStudentLoginModal();
@@ -707,23 +722,17 @@
             }
 
             let student = state.students.find(s => s.code === code);
-            if (student) {
-                student.name = name;
-                student.deviceBound = true;
-            } else {
-                student = { id: 'std_' + Date.now(), name: name, code: code, deviceBound: true };
-                state.students.push(student);
-            }
+            const studentId = student ? student.id : 'std_' + Date.now();
+            
+            student = { id: studentId, name: name, code: code, deviceBound: true };
 
             localStorage.setItem('app_bound_student_code', code);
             state.activeStudentId = student.id;
-            localStorage.setItem('app_students_db', JSON.stringify(state.students));
 
             if (db) db.ref('students/' + student.id).set(student);
 
             document.getElementById('studentRegisterModal').classList.add('hidden');
             loadStudentData();
-            renderAllStudentsTable();
         }
 
         function switchRole(role) {
@@ -832,25 +841,12 @@
                 timestampMs: Date.now()
             };
 
-            state.activeLecture = newLecture;
-            state.lecturesHistory.unshift(newLecture);
-            localStorage.setItem('app_lectures_db', JSON.stringify(state.lecturesHistory));
-
             if (db) {
                 db.ref('activeLecture').set(newLecture);
                 db.ref('lecturesHistory/' + lectureId).set(newLecture);
             }
 
-            document.getElementById('noActiveLectureState').classList.add('hidden');
-            document.getElementById('activeLectureState').classList.remove('hidden');
-            document.getElementById('currentLectureTitle').innerText = title;
-
-            document.getElementById('adminActiveCard').classList.remove('hidden');
-            document.getElementById('adminActiveTitle').innerText = title;
-
             startDynamicQRGenerator();
-            populateReportLectureSelector();
-            renderLiveFeed();
             alert("تم فتح الجلسة وبثها مباشرة لجميع أجهزة الطلاب!");
         }
 
@@ -861,16 +857,7 @@
                 if (!state.activeLecture) return;
                 const timeBlock = Math.floor(Date.now() / 5000);
                 const shortCode = Math.abs((timeBlock * 15485863) % 1000000).toString().padStart(6, '0');
-                state.currentDynamicToken = shortCode;
-
                 if (db) db.ref('currentDynamicToken').set(shortCode);
-
-                const qrImg = document.getElementById('dynamicQrImg');
-                const codeLabel = document.getElementById('dynamicCodeLabel');
-                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${shortCode}`;
-                
-                if (qrImg) qrImg.src = qrUrl;
-                if (codeLabel) codeLabel.innerText = `CODE: ${shortCode}`;
             };
 
             updateQR();
@@ -929,15 +916,21 @@
             `);
         }
 
+        // إلغاء الجلسة وحذفها فورياً من الفايربيز لإخفائها من أجهزة الجميع
         function cancelActiveLecture() {
             if (qrGeneratorInterval) clearInterval(qrGeneratorInterval);
             if (dedicatedQrWindow && !dedicatedQrWindow.closed) dedicatedQrWindow.close();
-            state.activeLecture = null;
-            if (db) db.ref('activeLecture').remove();
+            
+            if (db) {
+                db.ref('activeLecture').remove();
+                db.ref('currentDynamicToken').remove();
+            }
 
+            state.activeLecture = null;
             document.getElementById('noActiveLectureState').classList.remove('hidden');
             document.getElementById('activeLectureState').classList.add('hidden');
             document.getElementById('adminActiveCard').classList.add('hidden');
+            alert("تم إنهاء الجلسة المباشرة فوراً من أجهزة كافة الطلاب!");
         }
 
         function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -1014,14 +1007,10 @@
                             method: 'GPS الصارم'
                         };
 
-                        state.attendanceRecords.push(newRecord);
-                        localStorage.setItem('app_attendance_db', JSON.stringify(state.attendanceRecords));
-                        
                         if (db) db.ref('attendanceRecords').push(newRecord);
 
                         feedback.innerText = `تم توثيق حضورك الصارم بنجاح! (المسافة: ${Math.round(dist)}m)`;
                         feedback.className = "text-xs text-center font-bold bg-emerald-500/10 text-emerald-400 p-2.5 rounded-lg mt-2";
-                        renderLiveFeed();
                     },
                     (err) => {
                         feedback.innerText = "تعذر التقاط موقعك الجغرافي. يرجى مسح رمز QR القاعة المباشر بدلاً من ذلك.";
@@ -1032,6 +1021,7 @@
             }
         }
 
+        // فتح الكاميرا بآلية آمنة لمنع تعليق زرار (X)
         function openScannerModal() {
             if (!state.activeLecture) {
                 alert("لا توجد جلسة حضور نشطة حالياً!");
@@ -1048,24 +1038,26 @@
                         { fps: 10, qrbox: { width: 200, height: 200 } },
                         onScanSuccess
                     ).catch(err => {
-                        console.log("استخدم الخيار اليدوي بدلاً من الكاميرا.");
+                        console.log("تعذر تشغيل الكاميرا تلقائياً، يمكنك إدخال الكود يدويًا.");
                     });
                 } catch(e) {
-                    console.log("استخدم الإدخال اليدوي للكود.");
+                    console.log("خطأ بالكاميرا.");
                 }
             }
         }
 
+        // إغلاق النافذة بأمان مهما كانت حالة الكاميرا
         function closeScannerModal() {
+            const modal = document.getElementById('scannerModal');
             if (html5QrScanner) {
                 html5QrScanner.stop().then(() => {
                     html5QrScanner.clear();
-                    document.getElementById('scannerModal').classList.add('hidden');
+                    modal.classList.add('hidden');
                 }).catch(() => {
-                    document.getElementById('scannerModal').classList.add('hidden');
+                    modal.classList.add('hidden');
                 });
             } else {
-                document.getElementById('scannerModal').classList.add('hidden');
+                modal.classList.add('hidden');
             }
         }
 
@@ -1082,9 +1074,6 @@
                 method: method
             };
 
-            state.attendanceRecords.push(newRecord);
-            localStorage.setItem('app_attendance_db', JSON.stringify(state.attendanceRecords));
-            
             if (db) db.ref('attendanceRecords').push(newRecord);
 
             closeScannerModal();
@@ -1093,7 +1082,6 @@
             feedback.classList.remove('hidden');
             feedback.innerText = "تم التحقق المباشر عبر الـ QR وتسجيل الحضور بنجاح!";
             feedback.className = "text-xs text-center font-bold bg-emerald-500/10 text-emerald-400 p-2.5 rounded-lg mt-2";
-            renderLiveFeed();
         }
 
         function onScanSuccess(decodedText) {
@@ -1207,59 +1195,30 @@
             const student = state.students.find(s => s.id === studentId);
             if (!student) return;
 
-            if (confirm(`تأكيد: هل تريد حذف الطالب (${student.name}) بالكامل وتفريغ اقتران الموبايل ليتمكن من التسجيل من جديد؟`)) {
-                state.students = state.students.filter(s => s.id !== studentId);
-                state.attendanceRecords = state.attendanceRecords.filter(r => r.studentId !== studentId);
+            if (confirm(`تأكيد: هل تريد حذف الطالب (${student.name}) بالكامل لتفريع السيرفر؟`)) {
+                if (db) db.ref('students/' + studentId).remove();
 
                 const boundCode = localStorage.getItem('app_bound_student_code');
                 if (boundCode === student.code) {
                     localStorage.removeItem('app_bound_student_code');
                 }
 
-                if (state.activeStudentId === studentId) {
-                    state.activeStudentId = null;
-                    document.getElementById('studentDisplayName').innerText = "--";
-                    document.getElementById('studentDisplayCode').innerText = "الكود الجامعي: --";
-                }
-
-                localStorage.setItem('app_students_db', JSON.stringify(state.students));
-                localStorage.setItem('app_attendance_db', JSON.stringify(state.attendanceRecords));
-
-                if (db) {
-                    db.ref('students/' + studentId).remove();
-                }
-
                 document.getElementById('detailedReportContainer').classList.add('hidden');
                 document.getElementById('studentSearchInput').value = '';
-                renderAllStudentsTable();
-                renderPrintableSheet();
-                
-                alert("تم مسح الطالب واقتران جهازه كلياً!");
+                alert("تم مسح الطالب بنجاح!");
             }
         }
 
         function clearAllDataAndReset() {
-            if (confirm("تأكيد شمول: هل تريد مسح جميع بيانات الطلاب نهائياً؟")) {
-                state.students = [];
-                state.attendanceRecords = [];
-                state.activeStudentId = null;
-
-                localStorage.removeItem('app_students_db');
-                localStorage.removeItem('app_attendance_db');
-                localStorage.removeItem('app_bound_student_code');
-
+            if (confirm("تأكيد شمول: هل تريد مسح جميع بيانات الطلاب والمحاضرات نهائياً من السيرفر؟")) {
                 if (db) {
                     db.ref('students').remove();
                     db.ref('attendanceRecords').remove();
+                    db.ref('lecturesHistory').remove();
+                    db.ref('activeLecture').remove();
                 }
-
-                document.getElementById('studentDisplayName').innerText = "--";
-                document.getElementById('studentDisplayCode').innerText = "الكود الجامعي: --";
-
-                renderAllStudentsTable();
-                renderPrintableSheet();
-
-                alert("تم تفريغ كافة بيانات الطلاب بنجاح!");
+                localStorage.clear();
+                alert("تم تفريغ كافة البيانات من السيرفر بنجاح!");
             }
         }
 
@@ -1271,37 +1230,17 @@
             }
 
             const lecId = sel.value;
-            const lecture = state.lecturesHistory.find(l => l.id === lecId);
-
-            if (!lecture) return;
-
-            if (confirm(`تأكيد: هل تريد حذف المحاضرة (${lecture.title}) مع جميع كشوف الحضور الخاصة بها؟`)) {
-                state.lecturesHistory = state.lecturesHistory.filter(l => l.id !== lecId);
-                state.attendanceRecords = state.attendanceRecords.filter(r => r.lectureId !== lecId);
-
-                localStorage.setItem('app_lectures_db', JSON.stringify(state.lecturesHistory));
-                localStorage.setItem('app_attendance_db', JSON.stringify(state.attendanceRecords));
-
-                if (db) {
-                    db.ref('lecturesHistory/' + lecId).remove();
-                }
-
-                populateReportLectureSelector();
-                renderPrintableSheet();
-                alert("تم حذف المحاضرة وسجلاتها بنجاح!");
+            if (confirm(`تأكيد: هل تريد حذف المحاضرة المختارة نهائياً؟`)) {
+                if (db) db.ref('lecturesHistory/' + lecId).remove();
+                alert("تم حذف المحاضرة!");
             }
         }
 
         function unlinkStudentDevice(studentId) {
             const student = state.students.find(s => s.id === studentId);
             if (student) {
-                student.deviceBound = false;
-                localStorage.removeItem('app_bound_student_code');
-                localStorage.setItem('app_students_db', JSON.stringify(state.students));
                 if (db) db.ref('students/' + studentId).update({ deviceBound: false });
-                alert(`تم فك قفل الجهاز للطالب (${student.name}) بنجاح.`);
-                renderAllStudentsTable();
-                filterAndSelectStudent();
+                alert(`تم فك قفل الجهاز للطالب (${student.name}).`);
             }
         }
 
