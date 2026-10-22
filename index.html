@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>نظام تسجيل الحضور الذكي</title>
+    <title>نظام تسجيل الحضور الذكي - Geofenced Attendance System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -12,88 +12,521 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap');
-        body { font-family: 'Tajawal', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap');
+        body { font-family: 'Tajawal', sans-serif; -webkit-tap-highlight-color: transparent; }
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white !important; color: black !important; padding: 0 !important; }
+            .print-container { width: 100% !important; margin: 0 !important; box-shadow: none !important; border: none !important; }
+        }
+        .print-only { display: none; }
+        #qr-reader video { border-radius: 1rem; width: 100% !important; object-fit: cover; }
     </style>
 </head>
-<body class="bg-slate-900 text-white min-h-screen p-4">
+<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-200">
 
-    <!-- Header -->
-    <div class="max-w-md mx-auto flex justify-between items-center bg-slate-800 p-4 rounded-2xl mb-4 border border-slate-700">
-        <div>
-            <h1 class="font-bold text-lg">نظام الحضور الذكي</h1>
-            <p id="roleStatus" class="text-xs text-slate-400">واجهة الطالب</p>
-        </div>
-        <button onclick="toggleRole()" class="bg-sky-600 text-xs px-3 py-2 rounded-xl font-bold">تبديل (طالب / أدمن)</button>
-    </div>
-
-    <div class="max-w-md mx-auto space-y-4">
-
-        <!-- ===== STUDENT VIEW ===== -->
-        <div id="studentView" class="space-y-4">
-            <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700">
-                <span class="text-xs text-sky-400 font-bold">الطالب المسجل:</span>
-                <h2 id="stdNameDisplay" class="text-xl font-bold mt-1">لم يتم التسجيل</h2>
-                <button onclick="registerStudent()" class="mt-2 text-xs bg-slate-700 px-3 py-1.5 rounded-lg text-slate-300">تعديل البيانات</button>
+    <!-- Header / Navigation -->
+    <header class="no-print bg-white dark:bg-slate-800 shadow-md border-b border-slate-200 dark:border-slate-700 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3 space-x-reverse">
+                <div class="bg-brand-600 text-white p-2 rounded-xl shadow-lg">
+                    <i class="fa-solid fa-location-dot text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-base md:text-lg font-bold text-slate-800 dark:text-white leading-tight">نظام الحضور الذكي</h1>
+                    <p class="text-[10px] md:text-xs text-slate-500 dark:text-slate-400">الربط اللحظي السحابي (Live Cloud Sync)</p>
+                </div>
             </div>
 
-            <div id="noLectureCard" class="bg-slate-800 p-8 rounded-2xl border border-slate-700 text-center">
-                <i class="fa-solid fa-clock text-4xl text-slate-500 mb-2"></i>
-                <h3 class="font-bold text-lg">لا يوجد جلسة نشطة حالياً</h3>
-                <p class="text-xs text-slate-400 mt-1">بانتظار المحاضر لفتح باب الحضور...</p>
-            </div>
-
-            <div id="activeLectureCard" class="hidden bg-emerald-950/40 border border-emerald-500/40 p-5 rounded-2xl space-y-3">
-                <div class="flex justify-between items-center">
-                    <span class="bg-emerald-500 text-black text-[10px] font-bold px-2 py-0.5 rounded">جلسة مفتوحة</span>
-                    <h3 id="lecTitleDisplay" class="font-bold text-lg">--</h3>
+            <div class="flex items-center space-x-2 space-x-reverse">
+                <button id="soundToggleBtn" onclick="toggleSound()" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition">
+                    <i id="soundIcon" class="fa-solid fa-volume-high"></i>
+                </button>
+                <button onclick="toggleDarkMode()" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition">
+                    <i class="fa-solid fa-moon dark:hidden"></i>
+                    <i class="fa-solid fa-sun hidden dark:block"></i>
+                </button>
+                <div class="bg-slate-200 dark:bg-slate-700 p-1 rounded-xl flex text-xs font-semibold">
+                    <button id="roleStudentBtn" onclick="switchRole('student')" class="px-2.5 py-1 rounded-lg transition bg-white dark:bg-slate-800 shadow text-brand-600 dark:text-brand-400 font-bold">طالب</button>
+                    <button id="roleAdminBtn" onclick="switchRole('admin')" class="px-2.5 py-1 rounded-lg transition text-slate-600 dark:text-slate-400">مسؤول</button>
                 </div>
-
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="submitGPS()" class="bg-emerald-600 hover:bg-emerald-500 font-bold py-3 text-xs rounded-xl">حضور بـ GPS</button>
-                    <button onclick="openQRModal()" class="bg-sky-600 hover:bg-sky-500 font-bold py-3 text-xs rounded-xl">مسح الـ QR</button>
-                </div>
-                <p id="stdFeedback" class="text-xs text-center font-bold hidden p-2 rounded-lg"></p>
             </div>
         </div>
+    </header>
 
-        <!-- ===== ADMIN VIEW ===== -->
-        <div id="adminView" class="hidden space-y-4">
-            <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 space-y-3">
-                <h3 class="font-bold text-sm text-sky-400">لوحة التحكم (الأدمن)</h3>
-                <input type="text" id="lecInput" placeholder="اسم المحاضرة..." class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs outline-none">
-                
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 py-4 md:py-6">
+
+        <!-- ==================== STUDENT VIEW ==================== -->
+        <div id="studentSection" class="space-y-4 md:space-y-6 no-print">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 md:p-5 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 relative">
+                <div class="flex items-center space-x-3 space-x-reverse">
+                    <div class="w-10 h-10 md:w-12 md:h-12 bg-brand-100 dark:bg-slate-700 text-brand-600 dark:text-brand-400 rounded-2xl flex items-center justify-center font-bold text-lg md:text-xl">
+                        <i class="fa-solid fa-user-graduate"></i>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-slate-700/50 px-2 py-0.5 rounded border border-brand-200 dark:border-slate-600">الحساب المقترن بهذا الجهاز</span>
+                        <h2 id="studentDisplayName" class="text-xl md:text-2xl font-bold mt-0.5">--</h2>
+                        <p id="studentDisplayCode" class="text-xs text-slate-500 dark:text-slate-400">الكود الجامعي: --</p>
+                    </div>
+                </div>
+                <button onclick="openStudentLoginModal()" class="w-full md:w-auto text-xs bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold px-3.5 py-2.5 rounded-xl transition text-center">
+                    <i class="fa-solid fa-pen-to-square ml-1"></i> تسجيل/تعديل البيانات
+                </button>
+            </div>
+
+            <div class="bg-gradient-to-br from-slate-800 to-slate-900 text-white rounded-2xl p-5 md:p-6 shadow-xl relative overflow-hidden">
+                <div id="noActiveLectureState" class="text-center py-6 md:py-8">
+                    <div class="w-14 h-14 bg-slate-700/60 rounded-2xl flex items-center justify-center mx-auto mb-3 text-slate-400">
+                        <i class="fa-solid fa-clock text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg md:text-xl font-bold">لا يوجد جلسة تسجيل حضور نشطة حالياً</h3>
+                    <p class="text-xs text-slate-400 mt-1">يرجى الانتظار حتى يقوم المحاضر بفتح باب الحضور من شاشة الأدمن.</p>
+                </div>
+
+                <div id="activeLectureState" class="hidden space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+                        <div>
+                            <span class="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-500/30">جلسة نشطة الآن</span>
+                            <h3 id="currentLectureTitle" class="text-xl md:text-2xl font-extrabold mt-1">--</h3>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <button id="markAttendanceBtn" onclick="submitAttendanceGPS()" class="w-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold py-3.5 rounded-xl shadow-lg transition duration-150 flex items-center justify-center space-x-2 space-x-reverse text-sm md:text-base">
+                            <i class="fa-solid fa-location-crosshairs"></i>
+                            <span>تأكيد الحضور بـ GPS الصارم</span>
+                        </button>
+                        <button onclick="openScannerModal()" class="w-full bg-brand-600 hover:bg-brand-500 active:scale-95 text-white font-bold py-3.5 rounded-xl shadow-lg transition duration-150 flex items-center justify-center space-x-2 space-x-reverse text-sm md:text-base">
+                            <i class="fa-solid fa-qrcode"></i>
+                            <span>مسح رمز QR القاعة المباشر</span>
+                        </button>
+                    </div>
+
+                    <p id="attendanceFeedback" class="text-xs text-center font-semibold mt-2 hidden p-2.5 rounded-lg leading-relaxed"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== ADMIN DASHBOARD ==================== -->
+        <div id="adminSection" class="hidden space-y-6">
+
+            <div class="no-print bg-white dark:bg-slate-800 p-2 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="switchAdminTab('sessionTab')" id="tabBtn-sessionTab" class="admin-tab-btn active px-3.5 py-2 rounded-xl text-xs font-bold bg-brand-600 text-white shadow">
+                        <i class="fa-solid fa-tower-broadcast ml-1"></i> إدارة الجلسة الحالية
+                    </button>
+                    <button onclick="switchAdminTab('studentsTab')" id="tabBtn-studentsTab" class="admin-tab-btn px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                        <i class="fa-solid fa-id-card-clip ml-1"></i> الاستعلام والتقرير الفردي
+                    </button>
+                    <button onclick="switchAdminTab('reportsTab')" id="tabBtn-reportsTab" class="admin-tab-btn px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                        <i class="fa-solid fa-print ml-1"></i> الكشوف الجاهزة للطباعة
+                    </button>
+                </div>
+                <div class="flex items-center space-x-2 space-x-reverse mr-auto">
+                    <button onclick="logoutAdmin()" class="px-3 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30">
+                        <i class="fa-solid fa-right-from-bracket ml-1"></i> خروج
+                    </button>
+                    <button onclick="switchRole('student')" class="w-8 h-8 rounded-full bg-slate-200 text-black hover:bg-rose-500 hover:text-white flex items-center justify-center transition shadow font-bold" title="إغلاق والرجوع لصفحة الطالب">
+                        <i class="fa-solid fa-xmark text-lg text-black"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 1: Session Management -->
+            <div id="sessionTab" class="admin-tab-content space-y-4 md:space-y-6 no-print">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                    <h3 class="text-base md:text-lg font-bold mb-3 flex items-center space-x-2 space-x-reverse text-slate-800 dark:text-white">
+                        <i class="fa-solid fa-circle-play text-brand-600"></i>
+                        <span>بدء جلسة حضور جديدة (بث مباشر لجميع الطلاب)</span>
+                    </h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">اسم المحاضرة</label>
+                            <input type="text" id="lectureTitleInput" placeholder="محاضرة القانون الجنائي" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">النطاق بالمتر (يدوياً)</label>
+                            <input type="number" id="geofenceRadiusInput" value="8" min="1" max="100" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">المدة (بالدقائق)</label>
+                            <input type="number" id="lectureDurationInput" value="10" min="1" max="180" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm outline-none">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-slate-50 dark:bg-slate-700/40 p-3.5 rounded-xl border border-slate-200 dark:border-slate-600">
+                        <div class="text-xs text-slate-600 dark:text-slate-300 flex items-center space-x-2 space-x-reverse">
+                            <i class="fa-solid fa-location-dot text-brand-500 text-base"></i>
+                            <span id="adminGpsStatus">موقع الأدمن: جاهز للتحديد</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="fetchAdminLocation()" class="w-1/2 md:w-auto bg-slate-200 dark:bg-slate-600 text-xs font-bold px-3.5 py-2.5 rounded-xl transition hover:bg-slate-300">التقاط الموقع</button>
+                            <button type="button" onclick="startLectureSession()" class="w-1/2 md:w-auto bg-brand-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow transition hover:bg-brand-500">فتح باب الحضور</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="adminActiveCard" class="hidden bg-slate-900 text-white rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                        <div>
+                            <span class="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-500/30">الجلسة النشطة المباشرة</span>
+                            <h3 id="adminActiveTitle" class="text-lg font-bold mt-1">--</h3>
+                        </div>
+                        <button onclick="cancelActiveLecture()" class="bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-power-off"></i>
+                            <span>إغلاق المحاضرة فوراً من كل الأجهزة</span>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                        <div class="bg-white p-4 rounded-2xl flex flex-col items-center justify-center text-slate-900 shadow-inner space-y-3">
+                            <span class="text-xs font-bold text-slate-600 text-center">اعرض هذا الرمز على شاشة القاعة (يتغير كل 5 ثوانٍ):</span>
+                            
+                            <div class="p-3 bg-slate-50 rounded-2xl border-2 border-brand-500 flex flex-col items-center">
+                                <img id="dynamicQrImg" src="" alt="رمز QR المباشر" class="w-44 h-44 object-contain">
+                                <span id="dynamicCodeLabel" class="text-xs font-mono font-black text-brand-700 mt-2 bg-slate-200 px-3 py-1 rounded-lg">CODE: --</span>
+                            </div>
+
+                            <button onclick="openDedicatedQRWindow()" class="w-full bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold py-2.5 rounded-xl shadow transition flex items-center justify-center space-x-1 space-x-reverse">
+                                <i class="fa-solid fa-up-right-from-square ml-1"></i>
+                                <span>فتح الـ QR في نافذة مستقلة للبروجكتور</span>
+                            </button>
+                        </div>
+
+                        <div class="overflow-x-auto max-h-64 overflow-y-auto">
+                            <table class="w-full text-right text-xs">
+                                <thead class="bg-slate-800 text-slate-300 sticky top-0">
+                                    <tr>
+                                        <th class="p-2">الطالب</th>
+                                        <th class="p-2">الكود</th>
+                                        <th class="p-2">الوقت</th>
+                                        <th class="p-2">الطريقة</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="liveFeedBody" class="divide-y divide-slate-800">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: Single Student Printable Report -->
+            <div id="studentsTab" class="admin-tab-content hidden space-y-6">
+                <div class="no-print bg-white dark:bg-slate-800 rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                        <div>
+                            <h3 class="text-lg font-extrabold text-slate-800 dark:text-white flex items-center space-x-2 space-x-reverse">
+                                <i class="fa-solid fa-magnifying-glass-chart text-brand-600"></i>
+                                <span>الاستعلام والتقرير الأكاديمي للطالب</span>
+                            </h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">ابحث عن الطالب بالاسم أو الكود (حد الغياب 75%)</p>
+                        </div>
+                        <div class="w-full md:w-80 relative">
+                            <input type="text" id="studentSearchInput" onkeyup="filterAndSelectStudent()" placeholder="ادخل اسم الطالب أو الكود..." class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl pr-9 pl-3 py-2.5 text-xs md:text-sm outline-none focus:ring-2 focus:ring-brand-500">
+                            <i class="fa-solid fa-search absolute right-3 top-3 text-slate-400 text-xs"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="detailedReportContainer" class="hidden bg-white dark:bg-slate-800 rounded-2xl p-5 md:p-8 shadow-sm border border-slate-200 dark:border-slate-700 space-y-5 print-container relative">
+                    <button onclick="closeDetailedReport()" class="no-print absolute top-4 left-4 w-9 h-9 rounded-full bg-slate-200 hover:bg-rose-500 hover:text-white text-black transition flex items-center justify-center shadow font-bold" title="إغلاق التقرير">
+                        <i class="fa-solid fa-xmark text-lg text-black"></i>
+                    </button>
+
+                    <div class="border-b-2 border-slate-800 pb-3 flex justify-between items-center">
+                        <div>
+                            <h2 class="text-xl md:text-2xl font-black text-slate-900 dark:text-white">تقرير حضور وغياب طالب فردي</h2>
+                            <p class="text-[10px] md:text-xs font-bold text-slate-600 dark:text-slate-400">السجل الأكاديمي الرسمي</p>
+                        </div>
+                        <div class="text-left text-[10px] md:text-xs text-slate-500 pl-8">
+                            <p>تاريخ التقرير: <span id="repPrintDate">--</span></p>
+                            <p>حد الغياب الأقصى: <span class="font-bold text-rose-600">75%</span></p>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-xl border border-slate-200 dark:border-slate-600 flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                        <div>
+                            <h3 id="repStudentName" class="text-xl font-black text-slate-800 dark:text-white">--</h3>
+                            <p id="repStudentCode" class="text-xs text-slate-500 dark:text-slate-400">الرقم الجامعي: --</p>
+                        </div>
+                        <div class="no-print flex flex-wrap gap-2 w-full md:w-auto">
+                            <button id="repUnlinkBtn" class="bg-amber-500 text-white text-xs font-bold px-3 py-2 rounded-xl transition hover:bg-amber-600">فك قفل جهاز الطالب</button>
+                            <button id="repDeleteBtn" class="bg-rose-600 text-white text-xs font-bold px-3 py-2 rounded-xl transition hover:bg-rose-700">حذف الطالب بالكامل</button>
+                            <button onclick="window.print()" class="bg-brand-600 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center space-x-1 space-x-reverse">
+                                <i class="fa-solid fa-print"></i>
+                                <span>طباعة التقرير</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                        <div class="bg-slate-100 dark:bg-slate-700 p-3 rounded-xl border border-slate-200 dark:border-slate-600">
+                            <span class="text-[10px] text-slate-500 dark:text-slate-400 block">الحضور الأسبوعي</span>
+                            <span id="repWeeklyRatio" class="text-xl font-black text-emerald-600 dark:text-emerald-400">0%</span>
+                        </div>
+                        <div class="bg-slate-100 dark:bg-slate-700 p-3 rounded-xl border border-slate-200 dark:border-slate-600">
+                            <span class="text-[10px] text-slate-500 dark:text-slate-400 block">الحضور الشهري</span>
+                            <span id="repMonthlyRatio" class="text-xl font-black text-brand-600 dark:text-brand-400">0%</span>
+                        </div>
+                        <div class="bg-slate-100 dark:bg-slate-700 p-3 rounded-xl border border-slate-200 dark:border-slate-600">
+                            <span class="text-[10px] text-slate-500 dark:text-slate-400 block">نسبة الغياب الكلية</span>
+                            <span id="repTotalAbsenceRatio" class="text-xl font-black text-rose-600 dark:text-rose-400">0%</span>
+                        </div>
+                        <div class="bg-slate-100 dark:bg-slate-700 p-3 rounded-xl border border-slate-200 dark:border-slate-600">
+                            <span class="text-[10px] text-slate-500 dark:text-slate-400 block">المعدل العام</span>
+                            <span id="repOverallRatio" class="text-xl font-black text-amber-600 dark:text-amber-400">0%</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-bold">
+                            <span>مؤشر الغياب وحالة الحرمان:</span>
+                            <span id="repRiskText">منتظم</span>
+                        </div>
+                        <div class="w-full bg-slate-200 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
+                            <div id="repProgressBar" class="h-full rounded-full transition-all duration-500 bg-emerald-500 w-0"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <table class="w-full text-right text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-slate-800 text-white">
+                                    <th class="p-2 border">#</th>
+                                    <th class="p-2 border">المحاضرة</th>
+                                    <th class="p-2 border">التاريخ</th>
+                                    <th class="p-2 border">النوع</th>
+                                    <th class="p-2 border">الحالة</th>
+                                </tr>
+                            </thead>
+                            <tbody id="repHistoryTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="no-print bg-white dark:bg-slate-800 rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-sm font-bold text-slate-800 dark:text-white">قائمة جميع الطلاب المسجلين</h3>
+                        <button onclick="clearAllDataAndReset()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition">
+                            <i class="fa-solid fa-trash-can ml-1"></i> مسح جميع بيانات السيرفر نهائياً
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-xs md:text-sm">
+                            <thead class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold">
+                                <tr>
+                                    <th class="p-2.5">الطالب</th>
+                                    <th class="p-2.5">الكود</th>
+                                    <th class="p-2.5">الحضور الأسبوعي</th>
+                                    <th class="p-2.5">الحضور الشهري</th>
+                                    <th class="p-2.5 text-center">الإجراءات والتحكم</th>
+                                </tr>
+                            </thead>
+                            <tbody id="allStudentsTableBody" class="divide-y divide-slate-100 dark:divide-slate-700">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: Printable Lecture Sheets -->
+            <div id="reportsTab" class="admin-tab-content hidden space-y-6">
+                <div class="no-print bg-white dark:bg-slate-800 rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
+                    <h3 class="text-base font-bold">توليد وطباعة كشف المحاضرة التفصيلي</h3>
+                    <div class="flex flex-col md:flex-row items-end gap-3">
+                        <div class="flex-1 w-full">
+                            <label class="block text-xs font-bold text-slate-500 mb-1">اختر المحاضرة:</label>
+                            <select id="lectureReportSelector" onchange="renderPrintableSheet()" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-xs md:text-sm outline-none">
+                            </select>
+                        </div>
+                        <button onclick="deleteCurrentSelectedLecture()" class="w-full md:w-auto bg-rose-600 hover:bg-rose-500 text-white text-xs md:text-sm font-bold px-4 py-2.5 rounded-xl shadow transition flex items-center justify-center space-x-1 space-x-reverse">
+                            <i class="fa-solid fa-trash ml-1"></i>
+                            <span>حذف هذه المحاضرة</span>
+                        </button>
+                        <button onclick="window.print()" class="w-full md:w-auto bg-emerald-600 hover:bg-emerald-500 text-white text-xs md:text-sm font-bold px-5 py-2.5 rounded-xl shadow transition flex items-center justify-center space-x-2 space-x-reverse">
+                            <i class="fa-solid fa-print"></i>
+                            <span>طباعة الكشف</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="printableArea" class="bg-white text-slate-900 rounded-2xl p-6 md:p-8 border border-slate-200 print-container">
+                    <div class="border-b-2 border-slate-900 pb-4 mb-6 flex justify-between items-center">
+                        <div>
+                            <h2 class="text-2xl font-black text-slate-900">كشف حضور المحاضرة الرسمي</h2>
+                            <p id="printLectureTitleHeader" class="text-base font-extrabold text-brand-700 mt-1">اسم المحاضرة: --</p>
+                        </div>
+                        <div class="text-left text-xs text-slate-600 font-semibold space-y-1">
+                            <p>تاريخ الجلسة: <span id="printLectureDateHeader" class="font-bold">--</span></p>
+                            <p>حالة الكشف: <span class="text-emerald-700 font-bold">معتمد رسمياً (GPS + QR)</span></p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-300 mb-6 text-center text-xs">
+                        <div>
+                            <span class="text-slate-500 block mb-0.5">عدد الحاضرين الفعلي</span>
+                            <span id="printPresentCount" class="text-xl font-black text-emerald-700">0</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block mb-0.5">عدد الغائبين</span>
+                            <span id="printAbsentCount" class="text-xl font-black text-rose-700">0</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block mb-0.5">إجمالي طلاب الدفعة</span>
+                            <span id="printTotalStudentsCount" class="text-xl font-black text-slate-800">0</span>
+                        </div>
+                    </div>
+
+                    <table class="w-full text-right text-xs border-collapse">
+                        <thead>
+                            <tr class="bg-slate-900 text-white border border-slate-900">
+                                <th class="p-2.5 border border-slate-700">#</th>
+                                <th class="p-2.5 border border-slate-700">اسم الطالب الرباعي</th>
+                                <th class="p-2.5 border border-slate-700">الكود الجامعي</th>
+                                <th class="p-2.5 border border-slate-700">توقيت التسجيل</th>
+                                <th class="p-2.5 border border-slate-700">طريقة الحضور</th>
+                                <th class="p-2.5 border border-slate-700 text-center">الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody id="printableSheetBody">
+                        </tbody>
+                    </table>
+
+                    <div class="mt-10 pt-6 border-t border-slate-300 flex justify-between items-end text-xs">
+                        <div>
+                            <p class="font-bold">ملاحظات التوثيق:</p>
+                            <p class="text-slate-500">تم رصد الحضور إلكترونياً وتوثيق البصمة المكانية والجغرافية للقاعة.</p>
+                        </div>
+                        <div class="text-center px-8">
+                            <p class="font-bold mb-6">توقيع أستاذ المادة / المحاضر</p>
+                            <p class="text-slate-400">________________________</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Student Scanner Modal -->
+    <div id="scannerModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden no-print">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4 relative text-center">
+            
+            <button type="button" onclick="forceCloseScannerModal()" class="absolute top-3 left-3 w-10 h-10 rounded-full bg-slate-200 hover:bg-rose-600 hover:text-white transition flex items-center justify-center shadow-lg font-bold text-slate-900 z-[100] cursor-pointer" title="إغلاق">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            
+            <div>
+                <h3 class="text-lg font-extrabold text-slate-800 dark:text-white">امسح رمز QR المعروض بالقاعة</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">وجه كاميرا هاتف نحو الشاشة لتأكيد وجودك داخل الغرفة</p>
+            </div>
+
+            <div id="qr-reader" class="overflow-hidden rounded-2xl border-2 border-dashed border-brand-500 bg-slate-100 dark:bg-slate-900 min-h-[220px]"></div>
+
+            <div class="border-t border-slate-200 dark:border-slate-700 pt-3 text-right">
+                <label class="block text-[11px] font-bold text-slate-500 mb-1">أو ادخل الكود المعروض أسفل الرمز على الشاشة:</label>
                 <div class="flex gap-2">
-                    <button onclick="startSession()" class="w-1/2 bg-emerald-600 font-bold py-2.5 text-xs rounded-xl">فتح باب الحضور</button>
-                    <button onclick="stopSession()" class="w-1/2 bg-rose-600 font-bold py-2.5 text-xs rounded-xl">إغلاق المحاضرة فوراً</button>
+                    <input type="text" id="manualTokenInput" placeholder="ادخل الكود..." class="w-full bg-slate-50 dark:bg-slate-700 border rounded-xl px-3 py-1.5 text-xs outline-none">
+                    <button type="button" onclick="verifyManualToken()" class="bg-brand-600 text-white font-bold text-xs px-3 py-1.5 rounded-xl">تأكيد</button>
                 </div>
             </div>
 
-            <div id="adminActiveStatus" class="hidden bg-slate-800 p-4 rounded-2xl border border-amber-500/50 text-center space-y-2">
-                <p class="text-xs text-amber-400 font-bold">كود الـ QR المتغير حالياً:</p>
-                <div id="qrCodeDisplay" class="text-2xl font-mono font-black text-amber-400 bg-slate-900 py-2 rounded-xl border border-slate-700">------</div>
-            </div>
-        </div>
-
-    </div>
-
-    <!-- ===== QR SCANNER MODAL ===== -->
-    <div id="qrModal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-xs p-4 relative text-center space-y-3">
-            <button onclick="closeQRModal()" class="absolute -top-3 -left-3 w-10 h-10 rounded-full bg-rose-600 text-white font-black text-lg flex items-center justify-center shadow-lg border-2 border-slate-900 cursor-pointer">✕</button>
-            
-            <h3 class="font-bold text-sm">امسح كود الـ QR</h3>
-            <div id="reader" class="overflow-hidden rounded-xl bg-slate-900 border border-slate-700 min-h-[180px]"></div>
-            
-            <div class="pt-2 border-t border-slate-700">
-                <input type="text" id="manualCode" placeholder="أو اكتب الكود يدوياً..." class="w-full bg-slate-900 border border-slate-700 p-2 rounded-lg text-xs text-center outline-none mb-2">
-                <button onclick="submitManualCode()" class="w-full bg-sky-600 text-xs font-bold py-2 rounded-lg">تأكيد الكود</button>
-            </div>
-            <p id="scannerMsg" class="text-xs font-bold text-rose-400 hidden"></p>
+            <p id="scannerFeedback" class="text-xs font-bold text-amber-500 bg-amber-500/10 p-2 rounded-xl hidden"></p>
         </div>
     </div>
 
+    <!-- Student Registration Modal -->
+    <div id="studentRegisterModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4 relative">
+            
+            <button type="button" onclick="closeStudentLoginModal()" class="absolute -top-3 -left-3 w-10 h-10 rounded-full bg-slate-200 hover:bg-rose-600 hover:text-white text-slate-900 shadow-xl border-2 border-white dark:border-slate-700 flex items-center justify-center transition duration-150 cursor-pointer z-50" title="إغلاق والرجوع للموقع">
+                <i class="fa-solid fa-xmark text-xl font-black text-slate-900"></i>
+            </button>
+
+            <div class="text-center pt-1">
+                <div class="w-12 h-12 bg-brand-100 text-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-2">
+                    <i class="fa-solid fa-id-card text-xl"></i>
+                </div>
+                <h3 class="text-lg font-bold">مرحباً بك! ادخل بيانات الطالب</h3>
+                <p class="text-xs text-slate-500 mt-0.5">سجل بياناتك للبدء في استخدام النظام</p>
+            </div>
+
+            <form onsubmit="handleStudentRegisterSubmit(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">اسم الطالب الرباعي</label>
+                    <input type="text" id="regStudentName" required placeholder="مثال: أحمد محمود علي" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">الرقم الجامعي / الكود</label>
+                    <input type="text" id="regStudentCode" required placeholder="مثال: 2024001" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm outline-none">
+                </div>
+
+                <div id="regErrorBox" class="hidden bg-rose-50 border border-rose-200 rounded-xl p-3">
+                    <p id="regErrorText" class="text-xs font-bold text-rose-600 text-center leading-relaxed"></p>
+                </div>
+
+                <button type="submit" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-2.5 rounded-xl shadow transition mt-2 text-sm">
+                    حفظ ومتابعة
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Password Modal -->
+    <div id="adminAuthModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-xs w-full p-5 shadow-2xl border border-slate-200 dark:border-slate-700 relative">
+            <button type="button" onclick="cancelAdminAuth()" class="absolute top-3 left-3 w-8 h-8 rounded-full bg-slate-200 hover:bg-rose-500 hover:text-white transition flex items-center justify-center shadow font-bold cursor-pointer">
+                <i class="fa-solid fa-xmark text-base text-black"></i>
+            </button>
+
+            <div class="text-center mb-3 pt-2">
+                <div class="w-10 h-10 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-1">
+                    <i class="fa-solid fa-lock text-lg"></i>
+                </div>
+                <h3 class="text-base font-bold">دخول الأدمن</h3>
+            </div>
+
+            <form onsubmit="verifyAdminPassword(event)" class="space-y-3">
+                <div>
+                    <input type="password" id="adminPasswordInput" placeholder="كلمة المرور..." class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-center text-sm outline-none">
+                    <p id="adminAuthError" class="text-[10px] text-rose-500 mt-1 text-center hidden">كلمة المرور غير صحيحة!</p>
+                </div>
+                <div class="flex gap-2">
+                    <button type="button" onclick="cancelAdminAuth()" class="w-1/2 bg-slate-200 text-xs font-bold py-2 rounded-xl">إلغاء</button>
+                    <button type="submit" class="w-1/2 bg-brand-600 text-white text-xs font-bold py-2 rounded-xl">دخول</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Application Script Logic -->
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyCrajT5UTM7vyTicRHwajaKYhqwDTXTpi8",
@@ -105,136 +538,834 @@
             appId: "1:831137627248:web:ad98adb7dd0274d73748b5"
         };
 
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        // مسح الكاش القديم
+        localStorage.removeItem('app_lectures_db');
+        localStorage.removeItem('app_attendance_db');
 
-        let currentRole = 'student';
-        let currentToken = '';
-        let html5QrcodeScanner = null;
-        let activeLectureData = null;
+        let db = null;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+        } catch(e) {
+            console.log("Firebase error:", e);
+        }
 
-        // القراءة المباشرة من السيرفر
-        db.ref('activeLecture').on('value', (snap) => {
-            activeLectureData = snap.val();
-            if (activeLectureData) {
-                document.getElementById('noLectureCard').classList.add('hidden');
-                document.getElementById('activeLectureCard').classList.remove('hidden');
-                document.getElementById('lecTitleDisplay').innerText = activeLectureData.title;
-                document.getElementById('adminActiveStatus').classList.remove('hidden');
-            } else {
-                document.getElementById('noLectureCard').classList.remove('hidden');
-                document.getElementById('activeLectureCard').classList.add('hidden');
-                document.getElementById('adminActiveStatus').classList.add('hidden');
-            }
-        });
+        let audioCtx = null;
+        let soundEnabled = true;
+        let html5QrScanner = null;
+        let qrGeneratorInterval = null;
+        let dedicatedQrWindow = null;
 
-        db.ref('currentDynamicToken').on('value', (snap) => {
-            currentToken = snap.val() || '';
-            document.getElementById('qrCodeDisplay').innerText = currentToken || '------';
-        });
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
 
-        function registerStudent() {
-            const name = prompt("ادخل اسمك الرباعي:");
-            const code = prompt("ادخل كودك الجامعي:");
-            if (name && code) {
-                localStorage.setItem('std_name', name);
-                localStorage.setItem('std_code', code);
-                document.getElementById('stdNameDisplay').innerText = name + " (" + code + ")";
+        function playSound(type) {
+            if (!soundEnabled) return;
+            initAudio();
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            if (type === 'click') {
+                osc.frequency.setValueAtTime(600, now);
+                gain.gain.setValueAtTime(0.1, now);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.05);
             }
         }
 
-        window.onload = function() {
-            const savedName = localStorage.getItem('std_name');
-            if (savedName) {
-                document.getElementById('stdNameDisplay').innerText = savedName + " (" + localStorage.getItem('std_code') + ")";
-            } else {
-                registerStudent();
-            }
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundIcon').className = soundEnabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark text-rose-500';
+        }
+
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+        }
+
+        let state = {
+            isAdminLoggedIn: false,
+            currentRole: 'student',
+            activeStudentId: null,
+            activeLecture: null,
+            adminGpsLocation: null,
+            currentDynamicToken: "",
+            students: [],
+            lecturesHistory: [],
+            attendanceRecords: []
         };
 
-        function toggleRole() {
-            if (currentRole === 'student') {
-                const pass = prompt("ادخل كلمة السر (كلمة السر هي: 1234):");
-                if (pass && pass.trim() === '1234') {
-                    currentRole = 'admin';
-                    document.getElementById('studentView').classList.add('hidden');
-                    document.getElementById('adminView').classList.remove('hidden');
-                    document.getElementById('roleStatus').innerText = "واجهة الأدمن";
+        window.onload = function() {
+            document.getElementById('repPrintDate').innerText = new Date().toLocaleDateString('ar-EG');
+            listenToRealtimeCloudUpdates();
+        };
+
+        function listenToRealtimeCloudUpdates() {
+            if (!db) return;
+
+            db.ref('students').on('value', (snapshot) => {
+                const stds = snapshot.val();
+                state.students = stds ? Object.values(stds) : [];
+                checkExistingStudentSession();
+                renderAllStudentsTable();
+                renderPrintableSheet();
+            });
+
+            db.ref('lecturesHistory').on('value', (snapshot) => {
+                const lecs = snapshot.val();
+                state.lecturesHistory = lecs ? Object.values(lecs).reverse() : [];
+                populateReportLectureSelector();
+                renderPrintableSheet();
+            });
+
+            db.ref('activeLecture').on('value', (snapshot) => {
+                const activeLec = snapshot.val();
+                state.activeLecture = activeLec;
+                
+                if (activeLec) {
+                    document.getElementById('noActiveLectureState').classList.add('hidden');
+                    document.getElementById('activeLectureState').classList.remove('hidden');
+                    document.getElementById('currentLectureTitle').innerText = activeLec.title;
+                    if (state.isAdminLoggedIn) {
+                        document.getElementById('adminActiveCard').classList.remove('hidden');
+                        document.getElementById('adminActiveTitle').innerText = activeLec.title;
+                    }
                 } else {
-                    alert("كلمة السر خاطئة! الكلمة هي 1234");
+                    document.getElementById('noActiveLectureState').classList.remove('hidden');
+                    document.getElementById('activeLectureState').classList.add('hidden');
+                    document.getElementById('adminActiveCard').classList.add('hidden');
                 }
+            });
+
+            db.ref('currentDynamicToken').on('value', (snapshot) => {
+                const token = snapshot.val();
+                if (token) {
+                    state.currentDynamicToken = token;
+                    const qrImg = document.getElementById('dynamicQrImg');
+                    const codeLabel = document.getElementById('dynamicCodeLabel');
+                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${token}`;
+                    
+                    if (qrImg) qrImg.src = qrUrl;
+                    if (codeLabel) codeLabel.innerText = `CODE: ${token}`;
+
+                    if (dedicatedQrWindow && !dedicatedQrWindow.closed) {
+                        const winImg = dedicatedQrWindow.document.getElementById('winQrImg');
+                        const winCode = dedicatedQrWindow.document.getElementById('winQrCode');
+                        if (winImg) winImg.src = qrUrl;
+                        if (winCode) winCode.innerText = `CODE: ${token}`;
+                    }
+                }
+            });
+
+            db.ref('attendanceRecords').on('value', (snapshot) => {
+                const records = snapshot.val();
+                state.attendanceRecords = records ? Object.values(records) : [];
+                renderLiveFeed();
+                renderAllStudentsTable();
+                renderPrintableSheet();
+            });
+        }
+
+        function checkExistingStudentSession() {
+            const boundCode = localStorage.getItem('app_bound_student_code');
+            if (boundCode) {
+                const found = state.students.find(s => s.code === boundCode);
+                if (found) {
+                    state.activeStudentId = found.id;
+                    loadStudentData();
+                    return;
+                }
+            }
+            openStudentLoginModal();
+        }
+
+        function openStudentLoginModal() {
+            document.getElementById('studentRegisterModal').classList.remove('hidden');
+        }
+
+        function closeStudentLoginModal() {
+            document.getElementById('studentRegisterModal').classList.add('hidden');
+        }
+
+        function closeDetailedReport() {
+            document.getElementById('detailedReportContainer').classList.add('hidden');
+            document.getElementById('studentSearchInput').value = '';
+        }
+
+        function handleStudentRegisterSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('regStudentName').value.trim();
+            const code = document.getElementById('regStudentCode').value.trim();
+            const errBox = document.getElementById('regErrorBox');
+            const errText = document.getElementById('regErrorText');
+            errBox.classList.add('hidden');
+
+            const lockedStudentCodeOnPhone = localStorage.getItem('app_bound_student_code');
+
+            if (lockedStudentCodeOnPhone && lockedStudentCodeOnPhone !== code) {
+                const boundStudentExists = state.students.some(s => s.code === lockedStudentCodeOnPhone);
+                if (boundStudentExists) {
+                    errText.innerText = `عذراً! هذا الهاتف مقترن بالفعل بالكود (${lockedStudentCodeOnPhone}). يرجى مراجعة مسؤول النظام لفك اقتران الجهاز.`;
+                    errBox.classList.remove('hidden');
+                    return;
+                } else {
+                    localStorage.removeItem('app_bound_student_code');
+                }
+            }
+
+            let student = state.students.find(s => s.code === code);
+            const studentId = student ? student.id : 'std_' + Date.now();
+            
+            student = { id: studentId, name: name, code: code, deviceBound: true };
+
+            localStorage.setItem('app_bound_student_code', code);
+            state.activeStudentId = student.id;
+
+            if (db) db.ref('students/' + student.id).set(student);
+
+            document.getElementById('studentRegisterModal').classList.add('hidden');
+            loadStudentData();
+        }
+
+        function switchRole(role) {
+            playSound('click');
+            if (role === 'admin' && !state.isAdminLoggedIn) {
+                document.getElementById('adminAuthModal').classList.remove('hidden');
+                return;
+            }
+            state.currentRole = role;
+            updateRoleUI();
+            if (role === 'admin') renderPrintableSheet();
+        }
+
+        function verifyAdminPassword(e) {
+            e.preventDefault();
+            const inputPass = document.getElementById('adminPasswordInput').value.trim();
+            if (inputPass === 'Amr@2026') {
+                state.isAdminLoggedIn = true;
+                state.currentRole = 'admin';
+                document.getElementById('adminAuthModal').classList.add('hidden');
+                document.getElementById('adminAuthError').classList.add('hidden');
+                document.getElementById('adminPasswordInput').value = '';
+                updateRoleUI();
+                renderPrintableSheet();
             } else {
-                currentRole = 'student';
-                document.getElementById('adminView').classList.add('hidden');
-                document.getElementById('studentView').classList.remove('hidden');
-                document.getElementById('roleStatus').innerText = "واجهة الطالب";
+                document.getElementById('adminAuthError').classList.remove('hidden');
             }
         }
 
-        function startSession() {
-            const title = document.getElementById('lecInput').value.trim() || "محاضرة جديدة";
-            db.ref('activeLecture').set({ title: title, time: Date.now() });
-            
-            setInterval(() => {
-                const code = Math.floor(100000 + Math.random() * 900000).toString();
-                db.ref('currentDynamicToken').set(code);
-            }, 5000);
-            alert("تم فتح الجلسة وبثها للجميع!");
+        function cancelAdminAuth() {
+            document.getElementById('adminAuthModal').classList.add('hidden');
         }
 
-        function stopSession() {
-            db.ref('activeLecture').remove();
-            db.ref('currentDynamicToken').remove();
-            alert("تم إغلاق المحاضرة فوراً من جميع الهواتف!");
+        function logoutAdmin() {
+            state.isAdminLoggedIn = false;
+            switchRole('student');
         }
 
-        function submitGPS() {
-            const fb = document.getElementById('stdFeedback');
-            fb.classList.remove('hidden');
-            fb.className = "text-xs text-center font-bold bg-emerald-500/20 text-emerald-400 p-2 rounded-lg";
-            fb.innerText = "تم تأكيد الحضور بـ GPS بنجاح!";
+        function updateRoleUI() {
+            const stBtn = document.getElementById('roleStudentBtn');
+            const adBtn = document.getElementById('roleAdminBtn');
+            const stSec = document.getElementById('studentSection');
+            const adSec = document.getElementById('adminSection');
+
+            if (state.currentRole === 'student') {
+                stBtn.className = "px-2.5 py-1 rounded-lg transition bg-white dark:bg-slate-800 shadow text-brand-600 dark:text-brand-400 font-bold";
+                adBtn.className = "px-2.5 py-1 rounded-lg transition text-slate-600 dark:text-slate-400";
+                stSec.classList.remove('hidden');
+                adSec.classList.add('hidden');
+            } else {
+                adBtn.className = "px-2.5 py-1 rounded-lg transition bg-white dark:bg-slate-800 shadow text-brand-600 dark:text-brand-400 font-bold";
+                stBtn.className = "px-2.5 py-1 rounded-lg transition text-slate-600 dark:text-slate-400";
+                adSec.classList.remove('hidden');
+                stSec.classList.add('hidden');
+            }
         }
 
-        function openQRModal() {
-            document.getElementById('qrModal').classList.remove('hidden');
-            document.getElementById('scannerMsg').classList.add('hidden');
-            
-            try {
-                html5QrcodeScanner = new Html5Qrcode("reader");
-                html5QrcodeScanner.start(
-                    { facingMode: "environment" },
-                    { fps: 10, qrbox: 150 },
-                    (text) => {
-                        if (text === currentToken) {
-                            alert("تم تسجيل حضورك بالـ QR بنجاح!");
-                            closeQRModal();
-                        } else {
-                            document.getElementById('scannerMsg').innerText = "كود خاطئ أو انتهت صلاحيته!";
-                            document.getElementById('scannerMsg').classList.remove('hidden');
+        function loadStudentData() {
+            if (!state.activeStudentId) return;
+            const currentStudent = state.students.find(s => s.id === state.activeStudentId);
+            if (!currentStudent) return;
+
+            document.getElementById('studentDisplayName').innerText = currentStudent.name;
+            document.getElementById('studentDisplayCode').innerText = `الكود الجامعي: ${currentStudent.code}`;
+        }
+
+        function fetchAdminLocation() {
+            playSound('click');
+            const statusEl = document.getElementById('adminGpsStatus');
+            statusEl.innerText = "جاري التقاط إحداثيات الـ GPS...";
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        state.adminGpsLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                        statusEl.innerText = `تم التقاط الموقع الصارم: (${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)})`;
+                        statusEl.className = "text-xs font-bold text-emerald-600 dark:text-emerald-400";
+                    },
+                    (err) => {
+                        state.adminGpsLocation = { lat: 30.0444, lng: 31.2357 };
+                        statusEl.innerText = "موقع محاكاة افتراضي لقاعة المحاضرات";
+                        statusEl.className = "text-xs font-bold text-amber-600 dark:text-amber-400";
+                    },
+                    { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+                );
+            }
+        }
+
+        function startLectureSession() {
+            playSound('click');
+            const title = document.getElementById('lectureTitleInput').value.trim() || "محاضرة جديدة";
+            const radius = parseInt(document.getElementById('geofenceRadiusInput').value) || 8;
+            const durationMinutes = parseInt(document.getElementById('lectureDurationInput').value) || 10;
+
+            if (!state.adminGpsLocation) state.adminGpsLocation = { lat: 30.0444, lng: 31.2357 };
+
+            const lectureId = 'lec_' + Date.now();
+            const newLecture = {
+                id: lectureId,
+                title: title,
+                lat: state.adminGpsLocation.lat,
+                lng: state.adminGpsLocation.lng,
+                radius: radius,
+                endTime: Date.now() + (durationMinutes * 60 * 1000),
+                date: new Date().toLocaleString('ar-EG'),
+                timestampMs: Date.now()
+            };
+
+            if (db) {
+                db.ref('activeLecture').set(newLecture);
+                db.ref('lecturesHistory/' + lectureId).set(newLecture);
+            }
+
+            startDynamicQRGenerator();
+            alert("تم فتح الجلسة وبثها مباشرة لجميع أجهزة الطلاب!");
+        }
+
+        function startDynamicQRGenerator() {
+            if (qrGeneratorInterval) clearInterval(qrGeneratorInterval);
+
+            const updateQR = () => {
+                if (!state.activeLecture) return;
+                const timeBlock = Math.floor(Date.now() / 5000);
+                const shortCode = Math.abs((timeBlock * 15485863) % 1000000).toString().padStart(6, '0');
+                if (db) db.ref('currentDynamicToken').set(shortCode);
+            };
+
+            updateQR();
+            qrGeneratorInterval = setInterval(updateQR, 5000);
+        }
+
+        function openDedicatedQRWindow() {
+            if (!state.activeLecture) {
+                alert("لا توجد جلسة نشطة متوفرة!");
+                return;
+            }
+
+            dedicatedQrWindow = window.open("", "DedicatedQRWindow", "width=700,height=750");
+            dedicatedQrWindow.document.write(`
+                <!DOCTYPE html>
+                <html lang="ar" dir="rtl">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>شاشة عرض رمز QR الحضور - البروجكتور</title>
+                    <script src="https://cdn.tailwindcss.com"><\/script>
+                    <style>
+                        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@700;900&display=swap');
+                        body { font-family: 'Tajawal', sans-serif; }
+                    </style>
+                </head>
+                <body class="bg-slate-900 text-white min-h-screen flex flex-col items-center justify-center p-6 text-center select-none">
+                    <div class="mb-4">
+                        <h1 class="text-2xl md:text-3xl font-black text-amber-400">${state.activeLecture.title}</h1>
+                        <p class="text-xs text-slate-400 mt-1">امسح الرمز المباشر للتحقق من وجودك داخل القاعة</p>
+                    </div>
+
+                    <div class="flex gap-2 mb-4">
+                        <button onclick="changeSize(50)" class="bg-slate-800 hover:bg-slate-700 text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-700">+ تكبير الرمز</button>
+                        <button onclick="changeSize(-50)" class="bg-slate-800 hover:bg-slate-700 text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-700">- تصغير الرمز</button>
+                        <button onclick="document.documentElement.requestFullscreen()" class="bg-sky-600 hover:bg-sky-500 text-xs font-bold px-3 py-1.5 rounded-lg">ملء الشاشة</button>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-3xl shadow-2xl flex flex-col items-center border-4 border-amber-400">
+                        <img id="winQrImg" src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${state.currentDynamicToken}" class="w-72 h-72 object-contain transition-all duration-300">
+                        <span id="winQrCode" class="text-xl font-mono font-black text-slate-900 mt-3 bg-slate-200 px-4 py-1 rounded-xl">CODE: ${state.currentDynamicToken}</span>
+                    </div>
+
+                    <p class="text-xs text-emerald-400 font-bold mt-4 animate-pulse">● يتم تحديث الشفرة تلقائياً كل 5 ثوانٍ لمنع التصوير</p>
+
+                    <script>
+                        let size = 288;
+                        function changeSize(delta) {
+                            size = Math.max(150, Math.min(600, size + delta));
+                            const img = document.getElementById('winQrImg');
+                            img.style.width = size + 'px';
+                            img.style.height = size + 'px';
                         }
-                    }
-                ).catch(() => {});
-            } catch(e) {}
+                    <\/script>
+                </body>
+                </html>
+            `);
         }
 
-        function closeQRModal() {
-            document.getElementById('qrModal').classList.add('hidden');
-            if (html5QrcodeScanner) {
+        function cancelActiveLecture() {
+            if (qrGeneratorInterval) clearInterval(qrGeneratorInterval);
+            if (dedicatedQrWindow && !dedicatedQrWindow.closed) dedicatedQrWindow.close();
+            
+            if (db) {
+                db.ref('activeLecture').remove();
+                db.ref('currentDynamicToken').remove();
+            }
+
+            state.activeLecture = null;
+            document.getElementById('noActiveLectureState').classList.remove('hidden');
+            document.getElementById('activeLectureState').classList.add('hidden');
+            document.getElementById('adminActiveCard').classList.add('hidden');
+            alert("تم إغلاق المحاضرة فوراً من كل أجهزة الطلاب!");
+        }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371000;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = 
+                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        function submitAttendanceGPS() {
+            playSound('click');
+            const feedback = document.getElementById('attendanceFeedback');
+            feedback.classList.remove('hidden');
+
+            if (!state.activeLecture) {
+                feedback.innerText = "لا توجد جلسة نشطة متوفرة حالياً!";
+                feedback.className = "text-xs text-center font-bold bg-rose-500/10 text-rose-500 p-2.5 rounded-lg mt-2";
+                return;
+            }
+
+            const currentStudent = state.students.find(s => s.id === state.activeStudentId);
+            if (!currentStudent) {
+                feedback.innerText = "برجاء تسجيل بياناتك أولاً!";
+                feedback.className = "text-xs text-center font-bold bg-rose-500/10 text-rose-500 p-2.5 rounded-lg mt-2";
+                openStudentLoginModal();
+                return;
+            }
+
+            const existing = state.attendanceRecords.find(r => r.lectureId === state.activeLecture.id && r.studentId === currentStudent.id && r.status === 'حاضر');
+            if (existing) {
+                feedback.innerText = "لقد قمت بتسجيل حضورك بالفعل لهذا اليوم!";
+                feedback.className = "text-xs text-center font-bold bg-amber-500/10 text-amber-400 p-2.5 rounded-lg mt-2";
+                return;
+            }
+
+            feedback.innerText = "جاري الفحص الصارم للموقع الجغرافي داخل القاعة...";
+            feedback.className = "text-xs text-center font-bold bg-amber-500/10 text-amber-400 p-2.5 rounded-lg mt-2";
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        const accuracy = pos.coords.accuracy;
+                        const dist = calculateDistance(
+                            state.activeLecture.lat, 
+                            state.activeLecture.lng, 
+                            pos.coords.latitude, 
+                            pos.coords.longitude
+                        );
+
+                        if (accuracy > 15) {
+                            feedback.innerText = `دقة إشارة الهاتف ضعيفة (${Math.round(accuracy)}m). يرجى الاقتراب من المحاضر أو مسح رمز QR المعروض.`;
+                            feedback.className = "text-xs text-center font-bold bg-rose-500/10 text-rose-500 p-2.5 rounded-lg mt-2";
+                            return;
+                        }
+
+                        if (dist > state.activeLecture.radius) {
+                            feedback.innerText = `عذراً! أنت خارج القاعة حالياً (المسافة: ${Math.round(dist)} متر). التسجيل مسموح من داخل الغرفة فقط.`;
+                            feedback.className = "text-xs text-center font-bold bg-rose-500/10 text-rose-500 p-2.5 rounded-lg mt-2";
+                            return;
+                        }
+
+                        const timestamp = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+                        const newRecord = {
+                            lectureId: state.activeLecture.id,
+                            studentId: currentStudent.id,
+                            timestamp: timestamp,
+                            distance: Math.round(dist),
+                            status: 'حاضر',
+                            method: 'GPS الصارم'
+                        };
+
+                        if (db) db.ref('attendanceRecords').push(newRecord);
+
+                        feedback.innerText = `تم توثيق حضورك الصارم بنجاح! (المسافة: ${Math.round(dist)}m)`;
+                        feedback.className = "text-xs text-center font-bold bg-emerald-500/10 text-emerald-400 p-2.5 rounded-lg mt-2";
+                    },
+                    (err) => {
+                        feedback.innerText = "تعذر التقاط موقعك الجغرافي. يرجى مسح رمز QR القاعة المباشر بدلاً من ذلك.";
+                        feedback.className = "text-xs text-center font-bold bg-rose-500/10 text-rose-500 p-2.5 rounded-lg mt-2";
+                    },
+                    { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+                );
+            }
+        }
+
+        function openScannerModal() {
+            if (!state.activeLecture) {
+                alert("لا توجد جلسة حضور نشطة حالياً!");
+                return;
+            }
+            document.getElementById('scannerModal').classList.remove('hidden');
+            document.getElementById('scannerFeedback').classList.add('hidden');
+
+            if (typeof Html5Qrcode !== "undefined") {
                 try {
-                    html5QrcodeScanner.stop().then(() => html5QrcodeScanner.clear()).catch(() => {});
+                    if (!html5QrScanner) html5QrScanner = new Html5Qrcode("qr-reader");
+                    html5QrScanner.start(
+                        { facingMode: "environment" },
+                        { fps: 10, qrbox: { width: 200, height: 200 } },
+                        onScanSuccess
+                    ).catch(err => {
+                        console.log("تعذر فتح الكاميرا تلقائياً، يمكنك كتابة الكود يدوياً.");
+                    });
                 } catch(e) {}
             }
         }
 
-        function submitManualCode() {
-            const code = document.getElementById('manualCode').value.trim();
-            if (code === currentToken) {
-                alert("تم تسجيل الحضور بنجاح!");
-                closeQRModal();
-            } else {
-                document.getElementById('scannerMsg').innerText = "كود خاطئ!";
-                document.getElementById('scannerMsg').classList.remove('hidden');
+        function forceCloseScannerModal() {
+            const modal = document.getElementById('scannerModal');
+            modal.classList.add('hidden');
+            if (html5QrScanner) {
+                try {
+                    html5QrScanner.stop().then(() => html5QrScanner.clear()).catch(() => {});
+                } catch(e) {}
             }
+        }
+
+        function processSuccessfulQRScan(method) {
+            const currentStudent = state.students.find(s => s.id === state.activeStudentId);
+            const timestamp = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+            
+            const newRecord = {
+                lectureId: state.activeLecture.id,
+                studentId: currentStudent.id,
+                timestamp: timestamp,
+                distance: 0,
+                status: 'حاضر',
+                method: method
+            };
+
+            if (db) db.ref('attendanceRecords').push(newRecord);
+
+            forceCloseScannerModal();
+            
+            const feedback = document.getElementById('attendanceFeedback');
+            feedback.classList.remove('hidden');
+            feedback.innerText = "تم التحقق المباشر عبر الـ QR وتسجيل الحضور بنجاح!";
+            feedback.className = "text-xs text-center font-bold bg-emerald-500/10 text-emerald-400 p-2.5 rounded-lg mt-2";
+        }
+
+        function onScanSuccess(decodedText) {
+            if (decodedText === state.currentDynamicToken) {
+                processSuccessfulQRScan('مسح QR القاعة');
+            } else {
+                const fb = document.getElementById('scannerFeedback');
+                fb.innerText = "رمز غير صحيح أو انتهت صلاحيته! تأكد من التوجيه نحو الشاشة مباشرة.";
+                fb.classList.remove('hidden');
+            }
+        }
+
+        function verifyManualToken() {
+            const inputVal = document.getElementById('manualTokenInput').value.trim();
+            if (inputVal === state.currentDynamicToken) {
+                processSuccessfulQRScan('رمز QR اليدوي');
+                document.getElementById('manualTokenInput').value = "";
+            } else {
+                const fb = document.getElementById('scannerFeedback');
+                fb.innerText = "الكود المدخل غير صحيح أو انتهت صلاحيته!";
+                fb.classList.remove('hidden');
+            }
+        }
+
+        function filterAndSelectStudent() {
+            const query = document.getElementById('studentSearchInput').value.trim().toLowerCase();
+            const container = document.getElementById('detailedReportContainer');
+
+            if (!query) {
+                container.classList.add('hidden');
+                return;
+            }
+
+            const student = state.students.find(s => s.name.toLowerCase().includes(query) || s.code.includes(query));
+            if (student) {
+                generateStudentDetailedReport(student);
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+
+        function generateStudentDetailedReport(student) {
+            document.getElementById('repStudentName').innerText = student.name;
+            document.getElementById('repStudentCode').innerText = `الرقم الجامعي: ${student.code}`;
+
+            const now = Date.now();
+            const weeklyLectures = state.lecturesHistory.filter(l => (now - l.timestampMs) <= 7 * 86400000);
+            const monthlyLectures = state.lecturesHistory.filter(l => (now - l.timestampMs) <= 30 * 86400000);
+            const totalLectures = state.lecturesHistory.length;
+
+            const getPresentInLectures = (lecList) => {
+                return lecList.filter(l => {
+                    const rec = state.attendanceRecords.find(r => r.lectureId === l.id && r.studentId === student.id);
+                    return rec && rec.status === 'حاضر';
+                }).length;
+            };
+
+            const weeklyPresent = getPresentInLectures(weeklyLectures);
+            const monthlyPresent = getPresentInLectures(monthlyLectures);
+            const overallPresent = getPresentInLectures(state.lecturesHistory);
+
+            const weeklyRatio = weeklyLectures.length > 0 ? Math.round((weeklyPresent / weeklyLectures.length) * 100) : 100;
+            const monthlyRatio = monthlyLectures.length > 0 ? Math.round((monthlyPresent / monthlyLectures.length) * 100) : 100;
+            const overallRatio = totalLectures > 0 ? Math.round((overallPresent / totalLectures) * 100) : 0;
+            const absenceRatio = 100 - overallRatio;
+
+            document.getElementById('repWeeklyRatio').innerText = `${weeklyRatio}%`;
+            document.getElementById('repMonthlyRatio').innerText = `${monthlyRatio}%`;
+            document.getElementById('repTotalAbsenceRatio').innerText = `${absenceRatio}%`;
+            document.getElementById('repOverallRatio').innerText = `${overallRatio}%`;
+
+            const pBar = document.getElementById('repProgressBar');
+            const riskText = document.getElementById('repRiskText');
+
+            pBar.style.width = `${overallRatio}%`;
+
+            if (absenceRatio >= 75) {
+                riskText.innerText = "محروم رسمياً لتجاوز نسبة الغياب المسموحة (75%)";
+                riskText.className = "text-xs font-bold text-rose-600 dark:text-rose-400";
+                pBar.className = "h-full rounded-full transition-all duration-500 bg-rose-600";
+            } else {
+                riskText.innerText = "حالة حضور منتظمة وضمن النطاق الآمن";
+                riskText.className = "text-xs font-bold text-emerald-600 dark:text-emerald-400";
+                pBar.className = "h-full rounded-full transition-all duration-500 bg-emerald-500";
+            }
+
+            document.getElementById('repUnlinkBtn').onclick = function() { unlinkStudentDevice(student.id); };
+            document.getElementById('repDeleteBtn').onclick = function() { deleteStudent(student.id); };
+
+            const tbody = document.getElementById('repHistoryTableBody');
+            tbody.innerHTML = state.lecturesHistory.map((lec, idx) => {
+                const rec = state.attendanceRecords.find(r => r.lectureId === lec.id && r.studentId === student.id);
+                const isPresent = rec && rec.status === 'حاضر';
+
+                return `
+                    <tr class="${idx % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50 dark:bg-slate-700/30'}">
+                        <td class="p-2 border font-bold">${idx + 1}</td>
+                        <td class="p-2 border font-bold">${lec.title}</td>
+                        <td class="p-2 border text-slate-500">${rec ? rec.timestamp : lec.date}</td>
+                        <td class="p-2 border font-mono">${isPresent ? (rec.method || 'GPS الصارم') : '--'}</td>
+                        <td class="p-2 border font-bold ${isPresent ? 'text-emerald-600' : 'text-rose-600'}">
+                            ${isPresent ? 'حاضر' : 'غائب'}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function deleteStudent(studentId) {
+            const student = state.students.find(s => s.id === studentId);
+            if (!student) return;
+
+            if (confirm(`تأكيد: هل تريد حذف الطالب (${student.name}) بالكامل لتفريغ السيرفر؟`)) {
+                if (db) db.ref('students/' + studentId).remove();
+
+                const boundCode = localStorage.getItem('app_bound_student_code');
+                if (boundCode === student.code) {
+                    localStorage.removeItem('app_bound_student_code');
+                }
+
+                document.getElementById('detailedReportContainer').classList.add('hidden');
+                document.getElementById('studentSearchInput').value = '';
+                alert("تم مسح الطالب بنجاح!");
+            }
+        }
+
+        function clearAllDataAndReset() {
+            if (confirm("تأكيد شمول: هل تريد مسح جميع بيانات الطلاب والمحاضرات نهائياً من السيرفر؟")) {
+                if (db) {
+                    db.ref('students').remove();
+                    db.ref('attendanceRecords').remove();
+                    db.ref('lecturesHistory').remove();
+                    db.ref('activeLecture').remove();
+                }
+                localStorage.clear();
+                alert("تم تفريغ كافة البيانات من السيرفر بنجاح!");
+            }
+        }
+
+        function deleteCurrentSelectedLecture() {
+            const sel = document.getElementById('lectureReportSelector');
+            if (!sel || !sel.value) {
+                alert("لا توجد محاضرة محددة لحذفها!");
+                return;
+            }
+
+            const lecId = sel.value;
+            if (confirm(`تأكيد: هل تريد حذف المحاضرة المختارة نهائياً؟`)) {
+                if (db) db.ref('lecturesHistory/' + lecId).remove();
+                alert("تم حذف المحاضرة!");
+            }
+        }
+
+        function unlinkStudentDevice(studentId) {
+            const student = state.students.find(s => s.id === studentId);
+            if (student) {
+                if (db) db.ref('students/' + studentId).update({ deviceBound: false });
+                alert(`تم فك قفل الجهاز للطالب (${student.name}).`);
+            }
+        }
+
+        function renderLiveFeed() {
+            if (!state.activeLecture) return;
+            const currentLecRecords = state.attendanceRecords.filter(r => r.lectureId === state.activeLecture.id && r.status === 'حاضر');
+
+            const tbody = document.getElementById('liveFeedBody');
+            tbody.innerHTML = currentLecRecords.map(r => {
+                const student = state.students.find(s => s.id === r.studentId);
+                return `
+                    <tr>
+                        <td class="p-2 font-bold">${student ? student.name : '--'}</td>
+                        <td class="p-2 font-mono">${student ? student.code : '--'}</td>
+                        <td class="p-2 text-emerald-400">${r.timestamp}</td>
+                        <td class="p-2 font-mono text-amber-400">${r.method || 'GPS الصارم'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderAllStudentsTable() {
+            const tbody = document.getElementById('allStudentsTableBody');
+            const totalLectures = state.lecturesHistory.length;
+            const now = Date.now();
+
+            tbody.innerHTML = state.students.map(s => {
+                const presentCount = state.attendanceRecords.filter(r => r.studentId === s.id && r.status === 'حاضر').length;
+                const ratio = totalLectures > 0 ? Math.round((presentCount / totalLectures) * 100) : 0;
+                
+                const weeklyLectures = state.lecturesHistory.filter(l => (now - l.timestampMs) <= 7 * 86400000);
+                const weeklyPresent = weeklyLectures.filter(l => {
+                    const rec = state.attendanceRecords.find(r => r.lectureId === l.id && r.studentId === s.id);
+                    return rec && rec.status === 'حاضر';
+                }).length;
+                const weeklyRatio = weeklyLectures.length > 0 ? Math.round((weeklyPresent / weeklyLectures.length) * 100) : 100;
+
+                return `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30">
+                        <td class="p-2.5 font-bold">${s.name}</td>
+                        <td class="p-2.5 text-xs font-mono text-slate-500">${s.code}</td>
+                        <td class="p-2.5 font-bold text-emerald-600">${weeklyRatio}%</td>
+                        <td class="p-2.5 font-bold text-brand-600">${ratio}%</td>
+                        <td class="p-2.5 text-center flex items-center justify-center gap-1">
+                            <button onclick="selectAndShowStudent('${s.code}')" class="bg-brand-500/10 text-brand-600 dark:text-brand-400 hover:bg-brand-600 hover:text-white text-[10px] md:text-xs font-bold px-2 py-1 rounded-lg transition">
+                                التقرير
+                            </button>
+                            <button onclick="unlinkStudentDevice('${s.id}')" class="bg-amber-500/10 text-amber-600 hover:bg-amber-600 hover:text-white text-[10px] md:text-xs font-bold px-2 py-1 rounded-lg transition">
+                                فك الجهاز
+                            </button>
+                            <button onclick="deleteStudent('${s.id}')" class="bg-rose-500/10 text-rose-600 hover:bg-rose-600 hover:text-white text-[10px] md:text-xs font-bold px-2 py-1 rounded-lg transition">
+                                حذف
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function selectAndShowStudent(code) {
+            document.getElementById('studentSearchInput').value = code;
+            filterAndSelectStudent();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function switchAdminTab(tabId) {
+            playSound('click');
+            document.querySelectorAll('.admin-tab-btn').forEach(btn => btn.className = "admin-tab-btn px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700");
+            document.querySelectorAll('.admin-tab-content').forEach(content => content.classList.add('hidden'));
+
+            document.getElementById(`tabBtn-${tabId}`).className = "admin-tab-btn active px-3.5 py-2 rounded-xl text-xs font-bold bg-brand-600 text-white shadow";
+            document.getElementById(tabId).classList.remove('hidden');
+
+            if (tabId === 'reportsTab') renderPrintableSheet();
+        }
+
+        function populateReportLectureSelector() {
+            const sel = document.getElementById('lectureReportSelector');
+            if (state.lecturesHistory.length === 0) {
+                sel.innerHTML = '<option value="">لا توجد محاضرات مسجلة بعد</option>';
+                return;
+            }
+            sel.innerHTML = state.lecturesHistory.map(l => `<option value="${l.id}">${l.title} - (${l.date})</option>`).join('');
+        }
+
+        function renderPrintableSheet() {
+            const sel = document.getElementById('lectureReportSelector');
+            if (!sel) return;
+
+            let selLecId = sel.value;
+            if (!selLecId && state.lecturesHistory.length > 0) {
+                selLecId = state.lecturesHistory[0].id;
+            }
+
+            const lecture = state.lecturesHistory.find(l => l.id === selLecId);
+
+            if (!lecture) {
+                document.getElementById('printLectureTitleHeader').innerText = "اسم المحاضرة: لم ترصد أي محاضرة بعد";
+                document.getElementById('printLectureDateHeader').innerText = "--";
+                document.getElementById('printableSheetBody').innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-500 font-bold">لا توجد بيانات محاضرات متوفرة حالياً</td></tr>';
+                document.getElementById('printPresentCount').innerText = 0;
+                document.getElementById('printAbsentCount').innerText = 0;
+                document.getElementById('printTotalStudentsCount').innerText = state.students.length;
+                return;
+            }
+
+            document.getElementById('printLectureTitleHeader').innerText = `اسم المحاضرة: ${lecture.title}`;
+            document.getElementById('printLectureDateHeader').innerText = lecture.date;
+
+            const tbody = document.getElementById('printableSheetBody');
+            let presentCounter = 0;
+
+            if (state.students.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-500 font-bold">لا يوجد طلاب مسجلين بالدفعة بعد</td></tr>';
+            } else {
+                tbody.innerHTML = state.students.map((std, idx) => {
+                    const record = state.attendanceRecords.find(r => r.lectureId === selLecId && r.studentId === std.id && r.status === 'حاضر');
+                    const isPresent = !!record;
+                    if (isPresent) presentCounter++;
+
+                    return `
+                        <tr class="${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}">
+                            <td class="p-2 border border-slate-300 font-bold">${idx + 1}</td>
+                            <td class="p-2 border border-slate-300 font-bold">${std.name}</td>
+                            <td class="p-2 border border-slate-300 font-mono">${std.code}</td>
+                            <td class="p-2 border border-slate-300">${isPresent ? record.timestamp : '--'}</td>
+                            <td class="p-2 border border-slate-300 font-mono">${isPresent ? (record.method || 'GPS الصارم') : '--'}</td>
+                            <td class="p-2 border border-slate-300 text-center font-bold ${isPresent ? 'text-emerald-700' : 'text-rose-700'}">
+                                ${isPresent ? 'حاضر' : 'غائب'}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            document.getElementById('printPresentCount').innerText = presentCounter;
+            document.getElementById('printAbsentCount').innerText = Math.max(0, state.students.length - presentCounter);
+            document.getElementById('printTotalStudentsCount').innerText = state.students.length;
         }
     </script>
 </body>
