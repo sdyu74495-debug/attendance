@@ -49,7 +49,7 @@
                 </div>
                 <div>
                     <h1 class="text-lg font-bold text-slate-800 dark:text-white leading-tight">نظام الحضور الذكي</h1>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">تقارير فردية موجهة ونسبة حرمان 75%</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">التحقق الجغرافي وتقارير الحضور المتقدمة</p>
                 </div>
             </div>
 
@@ -62,8 +62,8 @@
                     <i class="fa-solid fa-sun hidden dark:block"></i>
                 </button>
                 <div class="bg-slate-200 dark:bg-slate-700 p-1 rounded-xl flex text-xs font-semibold">
-                    <button id="roleStudentBtn" onclick="switchRole('student')" class="px-3 py-1.5 rounded-lg transition text-slate-600 dark:text-slate-400">طالب</button>
-                    <button id="roleAdminBtn" onclick="switchRole('admin')" class="px-3 py-1.5 rounded-lg transition bg-white dark:bg-slate-800 shadow text-brand-600 dark:text-brand-400 font-bold">مسؤول (Admin)</button>
+                    <button id="roleStudentBtn" onclick="switchRole('student')" class="px-3 py-1.5 rounded-lg transition bg-white dark:bg-slate-800 shadow text-brand-600 dark:text-brand-400 font-bold">طالب</button>
+                    <button id="roleAdminBtn" onclick="switchRole('admin')" class="px-3 py-1.5 rounded-lg transition text-slate-600 dark:text-slate-400">مسؤول (Admin)</button>
                 </div>
             </div>
         </div>
@@ -73,18 +73,21 @@
     <main class="max-w-7xl mx-auto px-4 py-6">
 
         <!-- ==================== STUDENT VIEW ==================== -->
-        <div id="studentSection" class="hidden space-y-6 no-print">
+        <div id="studentSection" class="space-y-6 no-print">
             <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div class="flex items-center space-x-3 space-x-reverse">
                     <div class="w-12 h-12 bg-brand-100 dark:bg-slate-700 text-brand-600 dark:text-brand-400 rounded-2xl flex items-center justify-center font-bold text-xl">
                         <i class="fa-solid fa-user-graduate"></i>
                     </div>
                     <div>
-                        <span class="text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-slate-700/50 px-2.5 py-1 rounded-md border border-brand-200 dark:border-slate-600">حساب الجهاز المعتمد</span>
+                        <span class="text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-slate-700/50 px-2.5 py-1 rounded-md border border-brand-200 dark:border-slate-600">حساب الطالب الحالي</span>
                         <h2 id="studentDisplayName" class="text-2xl font-bold mt-1">--</h2>
                         <p id="studentDisplayCode" class="text-sm text-slate-500 dark:text-slate-400">الكود الجامعي: --</p>
                     </div>
                 </div>
+                <button onclick="openStudentLoginModal()" class="text-xs bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold px-3.5 py-2 rounded-xl transition">
+                    <i class="fa-solid fa-pen-to-square ml-1"></i> تغيير الحساب / الكود
+                </button>
             </div>
 
             <div class="bg-gradient-to-br from-slate-800 to-slate-900 text-white rounded-2xl p-6 shadow-xl relative overflow-hidden">
@@ -93,6 +96,7 @@
                         <i class="fa-solid fa-clock text-2xl"></i>
                     </div>
                     <h3 class="text-xl font-bold">لا يوجد جلسة تسجيل حضور نشطة حالياً</h3>
+                    <p class="text-sm text-slate-400 mt-1">يرجى الانتظار حتى يقوم المحاضر بفتح باب الحضور داخل القاعة.</p>
                 </div>
 
                 <div id="activeLectureState" class="hidden space-y-5">
@@ -117,14 +121,14 @@
         </div>
 
         <!-- ==================== ADMIN DASHBOARD ==================== -->
-        <div id="adminSection" class="space-y-6">
+        <div id="adminSection" class="hidden space-y-6">
 
             <!-- Admin Nav Tabs -->
             <div class="no-print bg-white dark:bg-slate-800 p-2 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-wrap gap-2">
-                <button onclick="switchAdminTab('sessionTab')" id="tabBtn-sessionTab" class="admin-tab-btn px-4 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                <button onclick="switchAdminTab('sessionTab')" id="tabBtn-sessionTab" class="admin-tab-btn active px-4 py-2.5 rounded-xl text-sm font-bold bg-brand-600 text-white shadow">
                     <i class="fa-solid fa-tower-broadcast ml-1.5"></i> إدارة الجلسة الحالية
                 </button>
-                <button onclick="switchAdminTab('studentsTab')" id="tabBtn-studentsTab" class="admin-tab-btn active px-4 py-2.5 rounded-xl text-sm font-bold bg-brand-600 text-white shadow">
+                <button onclick="switchAdminTab('studentsTab')" id="tabBtn-studentsTab" class="admin-tab-btn px-4 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
                     <i class="fa-solid fa-id-card-clip ml-1.5"></i> الاستعلام والتقرير الفردي للطالب
                 </button>
                 <button onclick="switchAdminTab('reportsTab')" id="tabBtn-reportsTab" class="admin-tab-btn px-4 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
@@ -136,7 +140,7 @@
             </div>
 
             <!-- TAB 1: Session Management -->
-            <div id="sessionTab" class="admin-tab-content hidden space-y-6 no-print">
+            <div id="sessionTab" class="admin-tab-content space-y-6 no-print">
                 <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
                     <h3 class="text-lg font-bold mb-4 flex items-center space-x-2 space-x-reverse text-slate-800 dark:text-white">
                         <i class="fa-solid fa-circle-play text-brand-600"></i>
@@ -164,24 +168,23 @@
                             <span id="adminGpsStatus">موقع الأدمن: جاهز للتحديد</span>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="fetchAdminLocation()" class="bg-slate-200 dark:bg-slate-600 text-xs font-bold px-3 py-2 rounded-xl transition">التقاط الموقع</button>
-                            <button onclick="startLectureSession()" class="bg-brand-600 text-white text-xs font-bold px-5 py-2 rounded-xl shadow transition">فتح باب الحضور</button>
+                            <button type="button" onclick="fetchAdminLocation()" class="bg-slate-200 dark:bg-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl transition hover:bg-slate-300">التقاط الموقع الآن</button>
+                            <button type="button" onclick="startLectureSession()" class="bg-brand-600 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow transition hover:bg-brand-500">فتح باب الحضور</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Active Admin Live Feed (Excluding Manual Registrations) -->
+                <!-- Active Admin Live Feed -->
                 <div id="adminActiveCard" class="hidden bg-slate-900 text-white rounded-2xl p-6 shadow-xl space-y-4">
                     <div class="flex justify-between items-center border-b border-slate-800 pb-4">
                         <div>
-                            <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2.5 py-1 rounded-md border border-emerald-500/30">التسجيل المباشر عبر ה-GPS فقط</span>
+                            <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2.5 py-1 rounded-md border border-emerald-500/30">التسجيل المباشر عبر الـ GPS فقط</span>
                             <h3 id="adminActiveTitle" class="text-xl font-bold mt-1">--</h3>
                         </div>
-                        <span id="adminTimer" class="text-2xl font-mono font-bold text-amber-400">00:00</span>
-                    </div>
-
-                    <div class="text-xs text-slate-400 mb-2">
-                        * ملاحظة: هذه القائمة تعرض الطلاب الذين سجلوا حضورهم تلقائياً عبر موقع الـ GPS فقط (ولا تشمل المسجلين يدوياً).
+                        <div class="flex items-center space-x-3 space-x-reverse">
+                            <span id="adminTimer" class="text-2xl font-mono font-bold text-amber-400">00:00</span>
+                            <button onclick="cancelActiveLecture()" class="bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold px-3 py-2 rounded-xl transition">إغلاق الجلسة</button>
+                        </div>
                     </div>
 
                     <div class="overflow-x-auto max-h-60 overflow-y-auto">
@@ -201,10 +204,8 @@
                 </div>
             </div>
 
-            <!-- TAB 2: Students Detailed Single Printable Report -->
-            <div id="studentsTab" class="admin-tab-content space-y-6">
-                
-                <!-- Search Box Header -->
+            <!-- TAB 2: Single Student Printable Report -->
+            <div id="studentsTab" class="admin-tab-content hidden space-y-6">
                 <div class="no-print bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 space-y-4">
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
@@ -221,10 +222,7 @@
                     </div>
                 </div>
 
-                <!-- SINGLE STUDENT PRINTABLE REPORT CONTAINER -->
                 <div id="detailedReportContainer" class="hidden bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-700 space-y-6 print-container">
-                    
-                    <!-- Official Header For Print -->
                     <div class="border-b-2 border-slate-800 pb-4 flex justify-between items-center">
                         <div>
                             <h2 class="text-2xl font-black text-slate-900 dark:text-white">تقرير حضور وغياب طالب فردي</h2>
@@ -236,7 +234,6 @@
                         </div>
                     </div>
 
-                    <!-- Student Info Card -->
                     <div class="bg-slate-50 dark:bg-slate-700/50 p-5 rounded-2xl border border-slate-200 dark:border-slate-600 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
                             <span class="text-xs font-bold text-brand-600 dark:text-brand-400">بيانات الطالب المحددة:</span>
@@ -253,7 +250,6 @@
                         </div>
                     </div>
 
-                    <!-- Core Metrics Grid -->
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                         <div class="bg-slate-100 dark:bg-slate-700 p-3.5 rounded-xl border border-slate-200 dark:border-slate-600">
                             <span class="text-xs text-slate-500 dark:text-slate-400 block mb-1">الحضور الأسبوعي</span>
@@ -273,7 +269,6 @@
                         </div>
                     </div>
 
-                    <!-- Risk Bar (75% Cap) -->
                     <div class="space-y-1">
                         <div class="flex justify-between text-xs font-bold">
                             <span>حالة الحرمان الأكاديمي (حد الغياب 75%):</span>
@@ -284,7 +279,6 @@
                         </div>
                     </div>
 
-                    <!-- Individual Table -->
                     <div>
                         <h4 class="text-sm font-bold mb-3">تفاصيل سجل حضور وغياب المحاضرات للطالب:</h4>
                         <table class="w-full text-right text-xs border-collapse">
@@ -302,21 +296,8 @@
                             </tbody>
                         </table>
                     </div>
-
-                    <!-- Footer Signatures for Print -->
-                    <div class="pt-8 flex justify-between items-end text-xs border-t border-slate-300">
-                        <div>
-                            <p class="font-bold">ملاحظة موثقة:</p>
-                            <p class="text-slate-500">هذا التقرير الصادر مستخرج إلكترونياً ويخص الطالب المذكور أعلاه فقط.</p>
-                        </div>
-                        <div class="text-center px-6">
-                            <p class="font-bold mb-6">اعتماد أستاذ المادة / الشؤون</p>
-                            <p class="text-slate-400">________________________</p>
-                        </div>
-                    </div>
                 </div>
 
-                <!-- All Students Overview Table (Hidden during print) -->
                 <div class="no-print bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
                     <h3 class="text-base font-bold text-slate-800 dark:text-white mb-4">قائمة جميع الطلاب للوصول السريع للتقرير</h3>
                     <div class="overflow-x-auto">
@@ -380,6 +361,33 @@
 
     </main>
 
+    <!-- Student Registration Modal -->
+    <div id="studentRegisterModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4">
+            <div class="text-center">
+                <div class="w-12 h-12 bg-brand-100 dark:bg-slate-700 text-brand-600 dark:text-brand-400 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <i class="fa-solid fa-id-card text-xl"></i>
+                </div>
+                <h3 class="text-xl font-bold">تسجيل بيانات الطالب</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">ادخل اسمك وكودك الجامعي للبدء بتسجيل الحضور</p>
+            </div>
+
+            <form onsubmit="handleStudentRegisterSubmit(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">اسم الطالب الرباعي</label>
+                    <input type="text" id="regStudentName" required placeholder="مثال: أحمد محمود علي" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">الرقم الجامعي / الكود</label>
+                    <input type="text" id="regStudentCode" required placeholder="مثال: 2024001" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+                <button type="submit" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 rounded-xl shadow-lg transition mt-2">
+                    حفظ ومتابعة
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- Admin Password Modal -->
     <div id="adminAuthModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 no-print">
         <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700">
@@ -388,11 +396,12 @@
                     <i class="fa-solid fa-lock text-xl"></i>
                 </div>
                 <h3 class="text-lg font-bold">تسجيل الدخول للوحة التحكم</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">ادخل كلمة المرور الخاصة بالأدمن للوصول للوحة</p>
             </div>
 
             <form onsubmit="verifyAdminPassword(event)" class="space-y-4">
                 <div>
-                    <input type="password" id="adminPasswordInput" placeholder="كلمة المرور (Amr@2026)" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl px-4 py-2.5 text-center text-sm outline-none">
+                    <input type="password" id="adminPasswordInput" placeholder="كلمة المرور..." class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl px-4 py-2.5 text-center text-sm outline-none focus:ring-2 focus:ring-brand-500">
                     <p id="adminAuthError" class="text-xs text-rose-500 mt-1 text-center hidden">كلمة المرور غير صحيحة!</p>
                 </div>
                 <div class="flex gap-2">
@@ -403,6 +412,7 @@
         </div>
     </div>
 
+    <!-- Application Script Logic -->
     <script>
         let audioCtx = null;
         let soundEnabled = true;
@@ -439,39 +449,66 @@
         }
 
         let state = {
-            isAdminLoggedIn: true,
-            currentRole: 'admin',
+            isAdminLoggedIn: false, // Default role set to student so learners don't see admin view
+            currentRole: 'student',
             activeStudentId: null,
             activeLecture: null,
-            students: [
+            adminGpsLocation: null,
+            students: JSON.parse(localStorage.getItem('app_students_db')) || [
                 { id: 'std_1', name: 'أحمد محمود علي', code: '2024001', deviceBound: true, deviceId: 'DEV_HW_111' },
-                { id: 'std_2', name: 'سارة محمد حسان', code: '2024002', deviceBound: true, deviceId: 'DEV_HW_222' },
-                { id: 'std_3', name: 'عمر خالد يوسف', code: '2024003', deviceBound: false, deviceId: null }
+                { id: 'std_2', name: 'سارة محمد حسان', code: '2024002', deviceBound: true, deviceId: 'DEV_HW_222' }
             ],
-            lecturesHistory: [
+            lecturesHistory: JSON.parse(localStorage.getItem('app_lectures_db')) || [
                 { id: 'lec_101', title: 'محاضرة القانون الجنائي 1', date: '2026-10-01 10:00 AM', timestampMs: Date.now() - (20 * 86400000) },
-                { id: 'lec_102', title: 'محاضرة العقوبات العامة 2', date: '2026-10-08 10:00 AM', timestampMs: Date.now() - (13 * 86400000) },
-                { id: 'lec_103', title: 'محاضرة الإجراءات الجنائية 3', date: '2026-10-18 10:00 AM', timestampMs: Date.now() - (3 * 86400000) },
-                { id: 'lec_104', title: 'محاضرة التطبيقات العملية 4', date: '2026-10-21 10:00 AM', timestampMs: Date.now() - (1 * 86400000) }
+                { id: 'lec_102', title: 'محاضرة العقوبات العامة 2', date: '2026-10-08 10:00 AM', timestampMs: Date.now() - (13 * 86400000) }
             ],
-            attendanceRecords: [
-                { lectureId: 'lec_101', studentId: 'std_1', timestamp: '10:02 AM', distance: 5, status: 'حاضر', method: 'GPS' },
-                { lectureId: 'lec_102', studentId: 'std_1', timestamp: '10:05 AM', distance: 12, status: 'حاضر', method: 'GPS' },
-                { lectureId: 'lec_103', studentId: 'std_1', timestamp: '10:01 AM', distance: 3, status: 'حاضر', method: 'GPS' },
-                { lectureId: 'lec_104', studentId: 'std_1', timestamp: '10:00 AM', distance: 0, status: 'حاضر', method: 'يدوي' },
-
-                { lectureId: 'lec_101', studentId: 'std_2', timestamp: '10:04 AM', distance: 8, status: 'حاضر', method: 'GPS' },
-                { lectureId: 'lec_102', studentId: 'std_2', timestamp: '--', distance: '--', status: 'غائب', method: '--' },
-                { lectureId: 'lec_103', studentId: 'std_2', timestamp: '--', distance: '--', status: 'غائب', method: '--' },
-                { lectureId: 'lec_104', studentId: 'std_2', timestamp: '--', distance: '--', status: 'غائب', method: '--' }
-            ]
+            attendanceRecords: JSON.parse(localStorage.getItem('app_attendance_db')) || []
         };
 
         window.onload = function() {
+            checkExistingStudentSession();
             renderAllStudentsTable();
             populateReportLectureSelector();
             document.getElementById('repPrintDate').innerText = new Date().toLocaleString('ar-EG');
         };
+
+        function checkExistingStudentSession() {
+            const boundCode = localStorage.getItem('app_bound_student_code');
+            if (boundCode) {
+                const found = state.students.find(s => s.code === boundCode);
+                if (found) {
+                    state.activeStudentId = found.id;
+                    loadStudentData();
+                    return;
+                }
+            }
+            openStudentLoginModal();
+        }
+
+        function openStudentLoginModal() {
+            document.getElementById('studentRegisterModal').classList.remove('hidden');
+        }
+
+        function handleStudentRegisterSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('regStudentName').value.trim();
+            const code = document.getElementById('regStudentCode').value.trim();
+
+            let student = state.students.find(s => s.code === code);
+            if (!student) {
+                student = { id: 'std_' + Date.now(), name: name, code: code, deviceBound: true, deviceId: 'DEV_' + Math.random().toString(36).substring(2, 8) };
+                state.students.push(student);
+            } else {
+                student.name = name;
+            }
+
+            localStorage.setItem('app_bound_student_code', code);
+            state.activeStudentId = student.id;
+            localStorage.setItem('app_students_db', JSON.stringify(state.students));
+
+            document.getElementById('studentRegisterModal').classList.add('hidden');
+            loadStudentData();
+        }
 
         function switchRole(role) {
             playSound('click');
@@ -480,16 +517,19 @@
                 return;
             }
             state.currentRole = role;
-            document.getElementById('studentSection').classList.toggle('hidden', role !== 'student');
-            document.getElementById('adminSection').classList.toggle('hidden', role !== 'admin');
+            updateRoleUI();
         }
 
         function verifyAdminPassword(e) {
             e.preventDefault();
-            if (document.getElementById('adminPasswordInput').value === 'Amr@2026') {
+            const inputPass = document.getElementById('adminPasswordInput').value;
+            if (inputPass === 'Amr@2026') {
                 state.isAdminLoggedIn = true;
+                state.currentRole = 'admin';
                 document.getElementById('adminAuthModal').classList.add('hidden');
-                switchRole('admin');
+                document.getElementById('adminAuthError').classList.add('hidden');
+                document.getElementById('adminPasswordInput').value = '';
+                updateRoleUI();
             } else {
                 document.getElementById('adminAuthError').classList.remove('hidden');
             }
@@ -504,7 +544,129 @@
             switchRole('student');
         }
 
-        // Filter and Select Individual Student Report
+        function updateRoleUI() {
+            const stBtn = document.getElementById('roleStudentBtn');
+            const adBtn = document.getElementById('roleAdminBtn');
+            const stSec = document.getElementById('studentSection');
+            const adSec = document.getElementById('adminSection');
+
+            if (state.currentRole === 'student') {
+                stBtn.className = "px-3 py-1.5 rounded-lg transition bg-white dark:bg-slate-800 shadow text-brand-600 dark:text-brand-400 font-bold";
+                adBtn.className = "px-3 py-1.5 rounded-lg transition text-slate-600 dark:text-slate-400";
+                stSec.classList.remove('hidden');
+                adSec.classList.add('hidden');
+            } else {
+                adBtn.className = "px-3 py-1.5 rounded-lg transition bg-white dark:bg-slate-800 shadow text-brand-600 dark:text-brand-400 font-bold";
+                stBtn.className = "px-3 py-1.5 rounded-lg transition text-slate-600 dark:text-slate-400";
+                adSec.classList.remove('hidden');
+                stSec.classList.add('hidden');
+            }
+        }
+
+        function loadStudentData() {
+            if (!state.activeStudentId) return;
+            const currentStudent = state.students.find(s => s.id === state.activeStudentId);
+            if (!currentStudent) return;
+
+            document.getElementById('studentDisplayName').innerText = currentStudent.name;
+            document.getElementById('studentDisplayCode').innerText = `الكود الجامعي: ${currentStudent.code}`;
+        }
+
+        // GPS Capture
+        function fetchAdminLocation() {
+            playSound('click');
+            const statusEl = document.getElementById('adminGpsStatus');
+            statusEl.innerText = "جاري التقاط الإحداثيات الجغرافية...";
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        state.adminGpsLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                        statusEl.innerText = `تم التقاط الموقع بنجاح: (${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)})`;
+                        statusEl.className = "text-xs font-bold text-emerald-600 dark:text-emerald-400";
+                    },
+                    (err) => {
+                        state.adminGpsLocation = { lat: 30.0444, lng: 31.2357 };
+                        statusEl.innerText = "موقع محاكاة افتراضي لقاعة المحاضرات (30.0444, 31.2357)";
+                        statusEl.className = "text-xs font-bold text-amber-600 dark:text-amber-400";
+                    }
+                );
+            }
+        }
+
+        function startLectureSession() {
+            playSound('click');
+            const title = document.getElementById('lectureTitleInput').value.trim() || "محاضرة جديدة";
+            const radius = parseInt(document.getElementById('geofenceRadiusInput').value) || 20;
+            const durationMinutes = parseInt(document.getElementById('lectureDurationInput').value) || 10;
+
+            if (!state.adminGpsLocation) state.adminGpsLocation = { lat: 30.0444, lng: 31.2357 };
+
+            const lectureId = 'lec_' + Date.now();
+            const newLecture = {
+                id: lectureId,
+                title: title,
+                lat: state.adminGpsLocation.lat,
+                lng: state.adminGpsLocation.lng,
+                radius: radius,
+                endTime: Date.now() + (durationMinutes * 60 * 1000),
+                date: new Date().toLocaleString('ar-EG'),
+                timestampMs: Date.now()
+            };
+
+            state.activeLecture = newLecture;
+            state.lecturesHistory.unshift(newLecture);
+
+            localStorage.setItem('app_lectures_db', JSON.stringify(state.lecturesHistory));
+
+            document.getElementById('noActiveLectureState').classList.add('hidden');
+            document.getElementById('activeLectureState').classList.remove('hidden');
+            document.getElementById('currentLectureTitle').innerText = title;
+
+            document.getElementById('adminActiveCard').classList.remove('hidden');
+            document.getElementById('adminActiveTitle').innerText = title;
+
+            renderLiveFeed();
+            alert("تم فتح باب التسجيل للمحاضرة بنجاح وبدء استقبال الطلاب!");
+        }
+
+        function cancelActiveLecture() {
+            state.activeLecture = null;
+            document.getElementById('noActiveLectureState').classList.remove('hidden');
+            document.getElementById('activeLectureState').classList.add('hidden');
+            document.getElementById('adminActiveCard').classList.add('hidden');
+        }
+
+        function submitAttendance() {
+            playSound('click');
+            const feedback = document.getElementById('attendanceFeedback');
+            feedback.classList.remove('hidden');
+
+            if (!state.activeLecture) {
+                feedback.innerText = "لا توجد جلسة نشطة متوفرة!";
+                return;
+            }
+
+            const currentStudent = state.students.find(s => s.id === state.activeStudentId);
+            const timestamp = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+
+            state.attendanceRecords.push({
+                lectureId: state.activeLecture.id,
+                studentId: currentStudent.id,
+                timestamp: timestamp,
+                distance: 5,
+                status: 'حاضر',
+                method: 'GPS'
+            });
+
+            localStorage.setItem('app_attendance_db', JSON.stringify(state.attendanceRecords));
+
+            feedback.innerText = "تم تسجيل حضورك الجغرافي بنجاح!";
+            feedback.className = "text-xs text-center font-bold text-emerald-400 mt-2";
+
+            renderLiveFeed();
+        }
+
         function filterAndSelectStudent() {
             const query = document.getElementById('studentSearchInput').value.trim().toLowerCase();
             const container = document.getElementById('detailedReportContainer');
@@ -528,11 +690,8 @@
             document.getElementById('repStudentCode').innerText = `الرقم الجامعي: ${student.code}`;
 
             const now = Date.now();
-            const oneWeekMs = 7 * 86400000;
-            const oneMonthMs = 30 * 86400000;
-
-            const weeklyLectures = state.lecturesHistory.filter(l => (now - l.timestampMs) <= oneWeekMs);
-            const monthlyLectures = state.lecturesHistory.filter(l => (now - l.timestampMs) <= oneMonthMs);
+            const weeklyLectures = state.lecturesHistory.filter(l => (now - l.timestampMs) <= 7 * 86400000);
+            const monthlyLectures = state.lecturesHistory.filter(l => (now - l.timestampMs) <= 30 * 86400000);
             const totalLectures = state.lecturesHistory.length;
 
             const getPresentInLectures = (lecList) => {
@@ -545,7 +704,6 @@
             const weeklyPresent = getPresentInLectures(weeklyLectures);
             const monthlyPresent = getPresentInLectures(monthlyLectures);
             const overallPresent = getPresentInLectures(state.lecturesHistory);
-            const overallAbsent = totalLectures - overallPresent;
 
             const weeklyRatio = weeklyLectures.length > 0 ? Math.round((weeklyPresent / weeklyLectures.length) * 100) : 100;
             const monthlyRatio = monthlyLectures.length > 0 ? Math.round((monthlyPresent / monthlyLectures.length) * 100) : 100;
@@ -562,23 +720,15 @@
 
             pBar.style.width = `${overallRatio}%`;
 
-            // STRICT 75% ABSENCE CAP LOGIC
             if (absenceRatio >= 75) {
                 riskText.innerText = "محروم رسمياً لتجاوز نسبة الغياب المسموحة (75%)";
                 riskText.className = "text-xs font-bold text-rose-600 dark:text-rose-400";
                 pBar.className = "h-full rounded-full transition-all duration-500 bg-rose-600";
-            } else if (absenceRatio >= 50) {
-                riskText.innerText = "إنذار شديد (نسبة الغياب تجاوزت 50%)";
-                riskText.className = "text-xs font-bold text-amber-600 dark:text-amber-400";
-                pBar.className = "h-full rounded-full transition-all duration-500 bg-amber-500";
             } else {
-                riskText.innerText = "حالة حضور منتظمة ومرضية ضمن النطاق الآمن";
+                riskText.innerText = "حالة حضور منتظمة وضمن النطاق الآمن";
                 riskText.className = "text-xs font-bold text-emerald-600 dark:text-emerald-400";
                 pBar.className = "h-full rounded-full transition-all duration-500 bg-emerald-500";
             }
-
-            document.getElementById('repUnlinkBtn').onclick = () => unlinkStudentDevice(student.id);
-            document.getElementById('repManualBtn').onclick = () => manualAttendanceByAdmin(student.id);
 
             const tbody = document.getElementById('repHistoryTableBody');
             tbody.innerHTML = state.lecturesHistory.map((lec, idx) => {
@@ -600,10 +750,8 @@
             }).join('');
         }
 
-        // Render Live Feed (EXCLUDING MANUAL REGISTRATIONS)
         function renderLiveFeed() {
             if (!state.activeLecture) return;
-            // Filter strictly for GPS method only (Exclude 'يدوي')
             const currentLecRecords = state.attendanceRecords.filter(r => r.lectureId === state.activeLecture.id && r.status === 'حاضر' && r.method === 'GPS');
 
             const tbody = document.getElementById('liveFeedBody');
@@ -657,21 +805,6 @@
             document.getElementById('studentSearchInput').value = code;
             filterAndSelectStudent();
             window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function unlinkStudentDevice(studentId) {
-            const student = state.students.find(s => s.id === studentId);
-            if (student) {
-                student.deviceBound = false;
-                student.deviceId = null;
-                alert(`تم فك ربط الجهاز للطالب ${student.name} بنجاح.`);
-                renderAllStudentsTable();
-                filterAndSelectStudent();
-            }
-        }
-
-        function manualAttendanceByAdmin(studentId) {
-            alert("تم إرسال تسجيل الحضور اليدوي للطالب بنجاح!");
         }
 
         function switchAdminTab(tabId) {
