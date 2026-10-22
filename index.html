@@ -326,7 +326,7 @@
                             </select>
                         </div>
                         <button onclick="deleteCurrentSelectedLecture()" class="w-full md:w-auto bg-rose-600 hover:bg-rose-500 text-white text-xs md:text-sm font-bold px-4 py-2.5 rounded-xl shadow transition flex items-center justify-center space-x-1 space-x-reverse">
-                            <i class="fa-solid fa-trash"></i>
+                            <i class="fa-solid fa-trash ml-1"></i>
                             <span>حذف هذه المحاضرة</span>
                         </button>
                         <button onclick="window.print()" class="w-full md:w-auto bg-emerald-600 hover:bg-emerald-500 text-white text-xs md:text-sm font-bold px-5 py-2.5 rounded-xl shadow transition flex items-center justify-center space-x-2 space-x-reverse">
@@ -401,7 +401,7 @@
 
     </main>
 
-    <!-- Student Registration Modal (POPUP AUTOMATICALLY ON FIRST VISIT) -->
+    <!-- Student Registration Modal -->
     <div id="studentRegisterModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
         <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4">
             <div class="text-center">
@@ -516,7 +516,6 @@
                     return;
                 }
             }
-            // AUTOMATIC OPEN REGISTRATION MODAL FOR STUDENTS
             openStudentLoginModal();
         }
 
@@ -686,7 +685,6 @@
             document.getElementById('adminActiveCard').classList.add('hidden');
         }
 
-        // COMPREHENSIVE IOS & ANDROID GPS HANDLER
         function submitAttendance() {
             playSound('click');
             const feedback = document.getElementById('attendanceFeedback');
@@ -729,7 +727,6 @@
                         renderLiveFeed();
                     },
                     (err) => {
-                        // iOS Safari & Android Fallback Error Handling
                         const timestamp = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
                         state.attendanceRecords.push({
                             lectureId: state.activeLecture.id,
@@ -812,8 +809,8 @@
                 pBar.className = "h-full rounded-full transition-all duration-500 bg-emerald-500";
             }
 
-            document.getElementById('repUnlinkBtn').onclick = () => unlinkStudentDevice(student.id);
-            document.getElementById('repDeleteBtn').onclick = () => deleteStudent(student.id);
+            document.getElementById('repUnlinkBtn').onclick = function() { unlinkStudentDevice(student.id); };
+            document.getElementById('repDeleteBtn').onclick = function() { deleteStudent(student.id); };
 
             const tbody = document.getElementById('repHistoryTableBody');
             tbody.innerHTML = state.lecturesHistory.map((lec, idx) => {
@@ -839,7 +836,7 @@
             const student = state.students.find(s => s.id === studentId);
             if (!student) return;
 
-            if (confirm(`هل أنت تأكد من حذف الطالب (${student.name}) نهائياً وسجلاته بالكامل؟`)) {
+            if (confirm(`تأكيد: هل تريد حذف الطالب (${student.name}) وسجلاته نهائياً؟`)) {
                 state.students = state.students.filter(s => s.id !== studentId);
                 state.attendanceRecords = state.attendanceRecords.filter(r => r.studentId !== studentId);
 
@@ -847,7 +844,9 @@
                 localStorage.setItem('app_attendance_db', JSON.stringify(state.attendanceRecords));
 
                 document.getElementById('detailedReportContainer').classList.add('hidden');
+                document.getElementById('studentSearchInput').value = '';
                 renderAllStudentsTable();
+                renderPrintableSheet();
                 alert("تم حذف الطالب وسجلاته بنجاح!");
             }
         }
@@ -855,12 +854,17 @@
         // DELETE LECTURE FUNCTION
         function deleteCurrentSelectedLecture() {
             const sel = document.getElementById('lectureReportSelector');
+            if (!sel || !sel.value) {
+                alert("لا توجد محاضرة محددة لحذفها!");
+                return;
+            }
+
             const lecId = sel.value;
             const lecture = state.lecturesHistory.find(l => l.id === lecId);
 
             if (!lecture) return;
 
-            if (confirm(`هل أنت تأكد من حذف المحاضرة (${lecture.title}) مع جميع كشوف الحضور الخاصة بها؟`)) {
+            if (confirm(`تأكيد: هل تريد حذف المحاضرة (${lecture.title}) مع جميع كشوف الحضور الخاصة بها؟`)) {
                 state.lecturesHistory = state.lecturesHistory.filter(l => l.id !== lecId);
                 state.attendanceRecords = state.attendanceRecords.filter(r => r.lectureId !== lecId);
 
@@ -869,7 +873,7 @@
 
                 populateReportLectureSelector();
                 renderPrintableSheet();
-                alert("تم حذف المحاضرة بنجاح!");
+                alert("تم حذف المحاضرة وسجلاتها بنجاح!");
             }
         }
 
@@ -1023,4 +1027,4 @@
         }
     </script>
 </body>
-</html>     
+</html>
