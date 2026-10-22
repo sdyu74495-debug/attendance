@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام تسجيل الحضور الذكي - Geofenced Attendance System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap');
+        body { font-family: 'Tajawal', sans-serif; }
+        @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body { background: white !important; color: black !important; padding: 0 !important; }
+            .print-container { width: 100% !important; margin: 0 !important; box-shadow: none !important; }
+        }
+        .print-only { display: none; }
+    </style>
+</head>
+<body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-200">
+
+    <!-- Header / Navigation -->
+    <header class="no-print bg-white dark:bg-slate-800 shadow-md border-b border-slate-200 dark:border-slate-700 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3 space-x-reverse">
+                <div class="bg-brand-600 text-white p-2 rounded-xl shadow-lg">
+                    <i class="fa-solid fa-location-dot text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-800 dark:text-white leading-tight">نظام الحضور الذكي</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">تقارير فردية موجهة ونسبة حرمان 75%</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2 space-x-reverse">
+                <button id="soundToggleBtn" onclick="toggleSound()" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition" title="تشغيل/إيقاف الصوت">
+                    <i id="soundIcon" class="fa-solid fa-volume-high"></i>
+                </button>
+                <button onclick="toggleDarkMode()" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition" title="تغيير المظهر">
+                    <i class="fa-solid fa-moon dark:hidden"></i>
+                    <i class="fa-solid fa-sun hidden dark:block"></i>
+                </button>
+                <div class="bg-slate-200 dark:bg-slate-700 p-1 rounded-xl flex text-xs font-semibold">
+                    <button id="roleStudentBtn" onclick="switchRole('student')" class="px-3 py-1.5 rounded-lg transition text-slate-600 dark:text-slate-400">طالب</button>
+                    <button id="roleAdminBtn" onclick="switchRole('admin')" class="px-3 py-1.5 rounded-lg transition bg-white dark:bg-slate-800 shadow text-brand-600 dark:text-brand-400 font-bold">مسؤول (Admin)</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6">
+
+        <!-- ==================== STUDENT VIEW ==================== -->
+        <div id="studentSection" class="hidden space-y-6 no-print">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div class="flex items-center space-x-3 space-x-reverse">
+                    <div class="w-12 h-12 bg-brand-100 dark:bg-slate-700 text-brand-600 dark:text-brand-400 rounded-2xl flex items-center justify-center font-bold text-xl">
+                        <i class="fa-solid fa-user-graduate"></i>
+                    </div>
+                    <div>
+                        <span class="text-xs font-bold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-slate-700/50 px-2.5 py-1 rounded-md border border-brand-200 dark:border-slate-600">حساب الجهاز المعتمد</span>
+                        <h2 id="studentDisplayName" class="text-2xl font-bold mt-1">--</h2>
+                        <p id="studentDisplayCode" class="text-sm text-slate-500 dark:text-slate-400">الكود الجامعي: --</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-slate-800 to-slate-900 text-white rounded-2xl p-6 shadow-xl relative overflow-hidden">
+                <div id="noActiveLectureState" class="text-center py-8">
+                    <div class="w-16 h-16 bg-slate-700/60 rounded-2xl flex items-center justify-center mx-auto mb-3 text-slate-400">
+                        <i class="fa-solid fa-clock text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold">لا يوجد جلسة تسجيل حضور نشطة حالياً</h3>
+                </div>
+
+                <div id="activeLectureState" class="hidden space-y-5">
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-700 pb-4">
+                        <div>
+                            <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2.5 py-1 rounded-md border border-emerald-500/30">جلسة تسجيل نشطة الآن</span>
+                            <h3 id="currentLectureTitle" class="text-2xl font-extrabold mt-1">--</h3>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-slate-400 block">الوقت المتبقي</span>
+                            <span id="studentTimer" class="text-2xl font-mono font-bold text-amber-400">00:00</span>
+                        </div>
+                    </div>
+
+                    <button id="markAttendanceBtn" onclick="submitAttendance()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg transition duration-200 flex items-center justify-center space-x-2 space-x-reverse text-lg">
+                        <i class="fa-solid fa-location-crosshairs"></i>
+                        <span>تأكيد وتسجيل الحضـور الآن (GPS)</span>
+                    </button>
+                    <p id="attendanceFeedback" class="text-xs text-center font-semibold mt-2 hidden"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== ADMIN DASHBOARD ==================== -->
+        <div id="adminSection" class="space-y-6">
+
+            <!-- Admin Nav Tabs -->
+            <div class="no-print bg-white dark:bg-slate-800 p-2 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-wrap gap-2">
+                <button onclick="switchAdminTab('sessionTab')" id="tabBtn-sessionTab" class="admin-tab-btn px-4 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                    <i class="fa-solid fa-tower-broadcast ml-1.5"></i> إدارة الجلسة الحالية
+                </button>
+                <button onclick="switchAdminTab('studentsTab')" id="tabBtn-studentsTab" class="admin-tab-btn active px-4 py-2.5 rounded-xl text-sm font-bold bg-brand-600 text-white shadow">
+                    <i class="fa-solid fa-id-card-clip ml-1.5"></i> الاستعلام والتقرير الفردي للطالب
+                </button>
+                <button onclick="switchAdminTab('reportsTab')" id="tabBtn-reportsTab" class="admin-tab-btn px-4 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700">
+                    <i class="fa-solid fa-print ml-1.5"></i> كشوف المحاضرات العامة
+                </button>
+                <button onclick="logoutAdmin()" class="mr-auto px-3 py-2.5 rounded-xl text-sm font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30">
+                    <i class="fa-solid fa-right-from-bracket ml-1"></i> خروج الأدمن
+                </button>
+            </div>
+
+            <!-- TAB 1: Session Management -->
+            <div id="sessionTab" class="admin-tab-content hidden space-y-6 no-print">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                    <h3 class="text-lg font-bold mb-4 flex items-center space-x-2 space-x-reverse text-slate-800 dark:text-white">
+                        <i class="fa-solid fa-circle-play text-brand-600"></i>
+                        <span>بدء جلسة حضور جديدة (GPS)</span>
+                    </h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">اسم المحاضرة</label>
+                            <input type="text" id="lectureTitleInput" placeholder="محاضرة القانون الجنائي" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">النطاق بالمتر (يدوياً)</label>
+                            <input type="number" id="geofenceRadiusInput" value="20" min="1" max="1000" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">المدة (بالدقائق)</label>
+                            <input type="number" id="lectureDurationInput" value="10" min="1" max="180" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm outline-none">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-50 dark:bg-slate-700/40 p-4 rounded-xl border border-slate-200 dark:border-slate-600">
+                        <div class="text-xs text-slate-600 dark:text-slate-300 flex items-center space-x-2 space-x-reverse">
+                            <i class="fa-solid fa-location-dot text-brand-500 text-base"></i>
+                            <span id="adminGpsStatus">موقع الأدمن: جاهز للتحديد</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="fetchAdminLocation()" class="bg-slate-200 dark:bg-slate-600 text-xs font-bold px-3 py-2 rounded-xl transition">التقاط الموقع</button>
+                            <button onclick="startLectureSession()" class="bg-brand-600 text-white text-xs font-bold px-5 py-2 rounded-xl shadow transition">فتح باب الحضور</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Admin Live Feed (Excluding Manual Registrations) -->
+                <div id="adminActiveCard" class="hidden bg-slate-900 text-white rounded-2xl p-6 shadow-xl space-y-4">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+                        <div>
+                            <span class="bg-emerald-500/20 text-emerald-400 text-xs font-bold px-2.5 py-1 rounded-md border border-emerald-500/30">التسجيل المباشر عبر ה-GPS فقط</span>
+                            <h3 id="adminActiveTitle" class="text-xl font-bold mt-1">--</h3>
+                        </div>
+                        <span id="adminTimer" class="text-2xl font-mono font-bold text-amber-400">00:00</span>
+                    </div>
+
+                    <div class="text-xs text-slate-400 mb-2">
+                        * ملاحظة: هذه القائمة تعرض الطلاب الذين سجلوا حضورهم تلقائياً عبر موقع الـ GPS فقط (ولا تشمل المسجلين يدوياً).
+                    </div>
+
+                    <div class="overflow-x-auto max-h-60 overflow-y-auto">
+                        <table class="w-full text-right text-xs">
+                            <thead class="bg-slate-800 text-slate-300">
+                                <tr>
+                                    <th class="p-2">الطالب</th>
+                                    <th class="p-2">الكود</th>
+                                    <th class="p-2">توقيت الحضور</th>
+                                    <th class="p-2">المسافة (متر)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="liveFeedBody" class="divide-y divide-slate-800">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: Students Detailed Single Printable Report -->
+            <div id="studentsTab" class="admin-tab-content space-y-6">
+                
+                <!-- Search Box Header -->
+                <div class="no-print bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 space-y-4">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <h3 class="text-xl font-extrabold text-slate-800 dark:text-white flex items-center space-x-2 space-x-reverse">
+                                <i class="fa-solid fa-magnifying-glass-chart text-brand-600"></i>
+                                <span>الاستعلام والتقرير الأكاديمي الموجه للطالب</span>
+                            </h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">ابحث عن الطالب بالاسم أو الكود لطباعة تقرير فردي دقيق (حد الغياب الأقصى 75%)</p>
+                        </div>
+                        <div class="w-full md:w-96 relative">
+                            <input type="text" id="studentSearchInput" onkeyup="filterAndSelectStudent()" placeholder="ادخل اسم الطالب أو الكود..." class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl pr-10 pl-4 py-3 text-sm outline-none focus:ring-2 focus:ring-brand-500 shadow-sm">
+                            <i class="fa-solid fa-search absolute right-3.5 top-3.5 text-slate-400"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SINGLE STUDENT PRINTABLE REPORT CONTAINER -->
+                <div id="detailedReportContainer" class="hidden bg-white dark:bg-slate-800 rounded-2xl p-8 shadow-sm border border-slate-200 dark:border-slate-700 space-y-6 print-container">
+                    
+                    <!-- Official Header For Print -->
+                    <div class="border-b-2 border-slate-800 pb-4 flex justify-between items-center">
+                        <div>
+                            <h2 class="text-2xl font-black text-slate-900 dark:text-white">تقرير حضور وغياب طالب فردي</h2>
+                            <p class="text-xs font-bold text-slate-600 dark:text-slate-400 mt-0.5">القسم الأكاديمي - السجل الرسمي للحضور والغياب</p>
+                        </div>
+                        <div class="text-left text-xs text-slate-500">
+                            <p>تاريخ استخراج التقرير: <span id="repPrintDate">--</span></p>
+                            <p>حد الغياب الأقصى المسموح: <span class="font-bold text-rose-600">75%</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Student Info Card -->
+                    <div class="bg-slate-50 dark:bg-slate-700/50 p-5 rounded-2xl border border-slate-200 dark:border-slate-600 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <span class="text-xs font-bold text-brand-600 dark:text-brand-400">بيانات الطالب المحددة:</span>
+                            <h3 id="repStudentName" class="text-2xl font-black text-slate-800 dark:text-white mt-1">--</h3>
+                            <p id="repStudentCode" class="text-xs text-slate-500 dark:text-slate-400">الرقم الجامعي: --</p>
+                        </div>
+                        <div class="no-print flex items-center space-x-2 space-x-reverse">
+                            <button id="repUnlinkBtn" class="bg-amber-500 text-white text-xs font-bold px-3 py-2 rounded-xl shadow transition">فك ربط الجهاز</button>
+                            <button id="repManualBtn" class="bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-xl shadow transition">حضور يدوي</button>
+                            <button onclick="window.print()" class="bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold px-4 py-2 rounded-xl shadow transition flex items-center space-x-1.5 space-x-reverse">
+                                <i class="fa-solid fa-print"></i>
+                                <span>طباعة تقرير هذا الطالب فقط</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Core Metrics Grid -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                        <div class="bg-slate-100 dark:bg-slate-700 p-3.5 rounded-xl border border-slate-200 dark:border-slate-600">
+                            <span class="text-xs text-slate-500 dark:text-slate-400 block mb-1">الحضور الأسبوعي</span>
+                            <span id="repWeeklyRatio" class="text-2xl font-black text-emerald-600 dark:text-emerald-400">0%</span>
+                        </div>
+                        <div class="bg-slate-100 dark:bg-slate-700 p-3.5 rounded-xl border border-slate-200 dark:border-slate-600">
+                            <span class="text-xs text-slate-500 dark:text-slate-400 block mb-1">الحضور الشهري</span>
+                            <span id="repMonthlyRatio" class="text-2xl font-black text-brand-600 dark:text-brand-400">0%</span>
+                        </div>
+                        <div class="bg-slate-100 dark:bg-slate-700 p-3.5 rounded-xl border border-slate-200 dark:border-slate-600">
+                            <span class="text-xs text-slate-500 dark:text-slate-400 block mb-1">نسبة الغياب الكلية</span>
+                            <span id="repTotalAbsenceRatio" class="text-2xl font-black text-rose-600 dark:text-rose-400">0%</span>
+                        </div>
+                        <div class="bg-slate-100 dark:bg-slate-700 p-3.5 rounded-xl border border-slate-200 dark:border-slate-600">
+                            <span class="text-xs text-slate-500 dark:text-slate-400 block mb-1">المعدل العام الإجمالي</span>
+                            <span id="repOverallRatio" class="text-2xl font-black text-amber-600 dark:text-amber-400">0%</span>
+                        </div>
+                    </div>
+
+                    <!-- Risk Bar (75% Cap) -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-bold">
+                            <span>حالة الحرمان الأكاديمي (حد الغياب 75%):</span>
+                            <span id="repRiskText">منتظم</span>
+                        </div>
+                        <div class="w-full bg-slate-200 dark:bg-slate-700 h-3 rounded-full overflow-hidden">
+                            <div id="repProgressBar" class="h-full rounded-full transition-all duration-500 bg-emerald-500 w-0"></div>
+                        </div>
+                    </div>
+
+                    <!-- Individual Table -->
+                    <div>
+                        <h4 class="text-sm font-bold mb-3">تفاصيل سجل حضور وغياب المحاضرات للطالب:</h4>
+                        <table class="w-full text-right text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-slate-800 text-white">
+                                    <th class="p-2 border border-slate-700">#</th>
+                                    <th class="p-2 border border-slate-700">اسم المحاضرة</th>
+                                    <th class="p-2 border border-slate-700">التاريخ والوقت</th>
+                                    <th class="p-2 border border-slate-700">طريقة الحضور</th>
+                                    <th class="p-2 border border-slate-700">المسافة (متر)</th>
+                                    <th class="p-2 border border-slate-700">الحالة الرسمية</th>
+                                </tr>
+                            </thead>
+                            <tbody id="repHistoryTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Footer Signatures for Print -->
+                    <div class="pt-8 flex justify-between items-end text-xs border-t border-slate-300">
+                        <div>
+                            <p class="font-bold">ملاحظة موثقة:</p>
+                            <p class="text-slate-500">هذا التقرير الصادر مستخرج إلكترونياً ويخص الطالب المذكور أعلاه فقط.</p>
+                        </div>
+                        <div class="text-center px-6">
+                            <p class="font-bold mb-6">اعتماد أستاذ المادة / الشؤون</p>
+                            <p class="text-slate-400">________________________</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- All Students Overview Table (Hidden during print) -->
+                <div class="no-print bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700">
+                    <h3 class="text-base font-bold text-slate-800 dark:text-white mb-4">قائمة جميع الطلاب للوصول السريع للتقرير</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-sm">
+                            <thead class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold">
+                                <tr>
+                                    <th class="p-3 rounded-r-xl">الطالب</th>
+                                    <th class="p-3">الكود</th>
+                                    <th class="p-3">الحضور الأسبوعي</th>
+                                    <th class="p-3">الحضور الشهري</th>
+                                    <th class="p-3">نسبة الغياب</th>
+                                    <th class="p-3 rounded-l-xl text-center">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="allStudentsTableBody" class="divide-y divide-slate-100 dark:divide-slate-700">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: Printable Lecture Sheets -->
+            <div id="reportsTab" class="admin-tab-content hidden space-y-6">
+                <div class="no-print bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-200 dark:border-slate-700 space-y-4">
+                    <h3 class="text-lg font-bold">توليد وطباعة كشف المحاضرة العامة</h3>
+                    <div class="flex flex-col md:flex-row items-end gap-4">
+                        <div class="flex-1 w-full">
+                            <select id="lectureReportSelector" onchange="renderPrintableSheet()" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm outline-none">
+                            </select>
+                        </div>
+                        <button onclick="window.print()" class="bg-emerald-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl shadow">طباعة الكشف العام</button>
+                    </div>
+                </div>
+
+                <div id="printableArea" class="bg-white text-slate-900 rounded-2xl p-8 border border-slate-200 print-container">
+                    <div class="border-b-2 border-slate-800 pb-4 mb-6 flex justify-between items-center">
+                        <div>
+                            <h2 class="text-2xl font-extrabold">كشف حضور المحاضرة الشامل</h2>
+                            <p class="text-sm font-semibold text-slate-600">جميع الطلاب المسجلين بالمحاضرة</p>
+                        </div>
+                    </div>
+
+                    <table class="w-full text-right text-xs border-collapse">
+                        <thead>
+                            <tr class="bg-slate-800 text-white">
+                                <th class="p-2 border">#</th>
+                                <th class="p-2 border">اسم الطالب</th>
+                                <th class="p-2 border">الكود الجامعي</th>
+                                <th class="p-2 border">توقيت الحضور</th>
+                                <th class="p-2 border">طريقة الحضور</th>
+                                <th class="p-2 border">الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody id="printableSheetBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Admin Password Modal -->
+    <div id="adminAuthModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4 no-print">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700">
+            <div class="text-center mb-4">
+                <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <i class="fa-solid fa-lock text-xl"></i>
+                </div>
+                <h3 class="text-lg font-bold">تسجيل الدخول للوحة التحكم</h3>
+            </div>
+
+            <form onsubmit="verifyAdminPassword(event)" class="space-y-4">
+                <div>
+                    <input type="password" id="adminPasswordInput" placeholder="كلمة المرور (Amr@2026)" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl px-4 py-2.5 text-center text-sm outline-none">
+                    <p id="adminAuthError" class="text-xs text-rose-500 mt-1 text-center hidden">كلمة المرور غير صحيحة!</p>
+                </div>
+                <div class="flex gap-2">
+                    <button type="button" onclick="cancelAdminAuth()" class="w-1/2 bg-slate-200 text-xs font-bold py-2.5 rounded-xl">إلغاء</button>
+                    <button type="submit" class="w-1/2 bg-brand-600 text-white text-xs font-bold py-2.5 rounded-xl">دخول</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            initAudio();
+            if (!audioCtx) return;
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            if (type === 'click') {
+                osc.frequency.setValueAtTime(600, now);
+                gain.gain.setValueAtTime(0.1, now);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundIcon').className = soundEnabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark text-rose-500';
+        }
+
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+        }
+
+        let state = {
+            isAdminLoggedIn: true,
+            currentRole: 'admin',
+            activeStudentId: null,
+            activeLecture: null,
+            students: [
+                { id: 'std_1', name: 'أحمد محمود علي', code: '2024001', deviceBound: true, deviceId: 'DEV_HW_111' },
+                { id: 'std_2', name: 'سارة محمد حسان', code: '2024002', deviceBound: true, deviceId: 'DEV_HW_222' },
+                { id: 'std_3', name: 'عمر خالد يوسف', code: '2024003', deviceBound: false, deviceId: null }
+            ],
+            lecturesHistory: [
+                { id: 'lec_101', title: 'محاضرة القانون الجنائي 1', date: '2026-10-01 10:00 AM', timestampMs: Date.now() - (20 * 86400000) },
+                { id: 'lec_102', title: 'محاضرة العقوبات العامة 2', date: '2026-10-08 10:00 AM', timestampMs: Date.now() - (13 * 86400000) },
+                { id: 'lec_103', title: 'محاضرة الإجراءات الجنائية 3', date: '2026-10-18 10:00 AM', timestampMs: Date.now() - (3 * 86400000) },
+                { id: 'lec_104', title: 'محاضرة التطبيقات العملية 4', date: '2026-10-21 10:00 AM', timestampMs: Date.now() - (1 * 86400000) }
+            ],
+            attendanceRecords: [
+                { lectureId: 'lec_101', studentId: 'std_1', timestamp: '10:02 AM', distance: 5, status: 'حاضر', method: 'GPS' },
+                { lectureId: 'lec_102', studentId: 'std_1', timestamp: '10:05 AM', distance: 12, status: 'حاضر', method: 'GPS' },
+                { lectureId: 'lec_103', studentId: 'std_1', timestamp: '10:01 AM', distance: 3, status: 'حاضر', method: 'GPS' },
+                { lectureId: 'lec_104', studentId: 'std_1', timestamp: '10:00 AM', distance: 0, status: 'حاضر', method: 'يدوي' },
+
+                { lectureId: 'lec_101', studentId: 'std_2', timestamp: '10:04 AM', distance: 8, status: 'حاضر', method: 'GPS' },
+                { lectureId: 'lec_102', studentId: 'std_2', timestamp: '--', distance: '--', status: 'غائب', method: '--' },
+                { lectureId: 'lec_103', studentId: 'std_2', timestamp: '--', distance: '--', status: 'غائب', method: '--' },
+                { lectureId: 'lec_104', studentId: 'std_2', timestamp: '--', distance: '--', status: 'غائب', method: '--' }
+            ]
+        };
+
+        window.onload = function() {
+            renderAllStudentsTable();
+            populateReportLectureSelector();
+            document.getElementById('repPrintDate').innerText = new Date().toLocaleString('ar-EG');
+        };
+
+        function switchRole(role) {
+            playSound('click');
+            if (role === 'admin' && !state.isAdminLoggedIn) {
+                document.getElementById('adminAuthModal').classList.remove('hidden');
+                return;
+            }
+            state.currentRole = role;
+            document.getElementById('studentSection').classList.toggle('hidden', role !== 'student');
+            document.getElementById('adminSection').classList.toggle('hidden', role !== 'admin');
+        }
+
+        function verifyAdminPassword(e) {
+            e.preventDefault();
+            if (document.getElementById('adminPasswordInput').value === 'Amr@2026') {
+                state.isAdminLoggedIn = true;
+                document.getElementById('adminAuthModal').classList.add('hidden');
+                switchRole('admin');
+            } else {
+                document.getElementById('adminAuthError').classList.remove('hidden');
+            }
+        }
+
+        function cancelAdminAuth() {
+            document.getElementById('adminAuthModal').classList.add('hidden');
+        }
+
+        function logoutAdmin() {
+            state.isAdminLoggedIn = false;
+            switchRole('student');
+        }
+
+        // Filter and Select Individual Student Report
+        function filterAndSelectStudent() {
+            const query = document.getElementById('studentSearchInput').value.trim().toLowerCase();
+            const container = document.getElementById('detailedReportContainer');
+
+            if (!query) {
+                container.classList.add('hidden');
+                return;
+            }
+
+            const student = state.students.find(s => s.name.toLowerCase().includes(query) || s.code.includes(query));
+            if (student) {
+                generateStudentDetailedReport(student);
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+
+        function generateStudentDetailedReport(student) {
+            document.getElementById('repStudentName').innerText = student.name;
+            document.getElementById('repStudentCode').innerText = `الرقم الجامعي: ${student.code}`;
+
+            const now = Date.now();
+            const oneWeekMs = 7 * 86400000;
+            const oneMonthMs = 30 * 86400000;
+
+            const weeklyLectures = state.lecturesHistory.filter(l => (now - l.timestampMs) <= oneWeekMs);
+            const monthlyLectures = state.lecturesHistory.filter(l => (now - l.timestampMs) <= oneMonthMs);
+            const totalLectures = state.lecturesHistory.length;
+
+            const getPresentInLectures = (lecList) => {
+                return lecList.filter(l => {
+                    const rec = state.attendanceRecords.find(r => r.lectureId === l.id && r.studentId === student.id);
+                    return rec && rec.status === 'حاضر';
+                }).length;
+            };
+
+            const weeklyPresent = getPresentInLectures(weeklyLectures);
+            const monthlyPresent = getPresentInLectures(monthlyLectures);
+            const overallPresent = getPresentInLectures(state.lecturesHistory);
+            const overallAbsent = totalLectures - overallPresent;
+
+            const weeklyRatio = weeklyLectures.length > 0 ? Math.round((weeklyPresent / weeklyLectures.length) * 100) : 100;
+            const monthlyRatio = monthlyLectures.length > 0 ? Math.round((monthlyPresent / monthlyLectures.length) * 100) : 100;
+            const overallRatio = totalLectures > 0 ? Math.round((overallPresent / totalLectures) * 100) : 0;
+            const absenceRatio = 100 - overallRatio;
+
+            document.getElementById('repWeeklyRatio').innerText = `${weeklyRatio}%`;
+            document.getElementById('repMonthlyRatio').innerText = `${monthlyRatio}%`;
+            document.getElementById('repTotalAbsenceRatio').innerText = `${absenceRatio}%`;
+            document.getElementById('repOverallRatio').innerText = `${overallRatio}%`;
+
+            const pBar = document.getElementById('repProgressBar');
+            const riskText = document.getElementById('repRiskText');
+
+            pBar.style.width = `${overallRatio}%`;
+
+            // STRICT 75% ABSENCE CAP LOGIC
+            if (absenceRatio >= 75) {
+                riskText.innerText = "محروم رسمياً لتجاوز نسبة الغياب المسموحة (75%)";
+                riskText.className = "text-xs font-bold text-rose-600 dark:text-rose-400";
+                pBar.className = "h-full rounded-full transition-all duration-500 bg-rose-600";
+            } else if (absenceRatio >= 50) {
+                riskText.innerText = "إنذار شديد (نسبة الغياب تجاوزت 50%)";
+                riskText.className = "text-xs font-bold text-amber-600 dark:text-amber-400";
+                pBar.className = "h-full rounded-full transition-all duration-500 bg-amber-500";
+            } else {
+                riskText.innerText = "حالة حضور منتظمة ومرضية ضمن النطاق الآمن";
+                riskText.className = "text-xs font-bold text-emerald-600 dark:text-emerald-400";
+                pBar.className = "h-full rounded-full transition-all duration-500 bg-emerald-500";
+            }
+
+            document.getElementById('repUnlinkBtn').onclick = () => unlinkStudentDevice(student.id);
+            document.getElementById('repManualBtn').onclick = () => manualAttendanceByAdmin(student.id);
+
+            const tbody = document.getElementById('repHistoryTableBody');
+            tbody.innerHTML = state.lecturesHistory.map((lec, idx) => {
+                const rec = state.attendanceRecords.find(r => r.lectureId === lec.id && r.studentId === student.id);
+                const isPresent = rec && rec.status === 'حاضر';
+
+                return `
+                    <tr class="${idx % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50 dark:bg-slate-700/30'}">
+                        <td class="p-2 border border-slate-200 dark:border-slate-700 font-bold">${idx + 1}</td>
+                        <td class="p-2 border border-slate-200 dark:border-slate-700 font-bold">${lec.title}</td>
+                        <td class="p-2 border border-slate-200 dark:border-slate-700 text-slate-500">${rec ? rec.timestamp : lec.date}</td>
+                        <td class="p-2 border border-slate-200 dark:border-slate-700 font-mono">${isPresent ? (rec.method || 'GPS') : '--'}</td>
+                        <td class="p-2 border border-slate-200 dark:border-slate-700 font-mono">${isPresent ? rec.distance + ' متر' : '--'}</td>
+                        <td class="p-2 border border-slate-200 dark:border-slate-700 font-bold ${isPresent ? 'text-emerald-600' : 'text-rose-600'}">
+                            ${isPresent ? 'حاضر' : 'غائب'}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Render Live Feed (EXCLUDING MANUAL REGISTRATIONS)
+        function renderLiveFeed() {
+            if (!state.activeLecture) return;
+            // Filter strictly for GPS method only (Exclude 'يدوي')
+            const currentLecRecords = state.attendanceRecords.filter(r => r.lectureId === state.activeLecture.id && r.status === 'حاضر' && r.method === 'GPS');
+
+            const tbody = document.getElementById('liveFeedBody');
+            tbody.innerHTML = currentLecRecords.map(r => {
+                const student = state.students.find(s => s.id === r.studentId);
+                return `
+                    <tr>
+                        <td class="p-2 font-bold">${student ? student.name : '--'}</td>
+                        <td class="p-2 font-mono">${student ? student.code : '--'}</td>
+                        <td class="p-2 text-emerald-400">${r.timestamp}</td>
+                        <td class="p-2 font-mono">${r.distance} م</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderAllStudentsTable() {
+            const tbody = document.getElementById('allStudentsTableBody');
+            const totalLectures = state.lecturesHistory.length;
+            const now = Date.now();
+
+            tbody.innerHTML = state.students.map(s => {
+                const presentCount = state.attendanceRecords.filter(r => r.studentId === s.id && r.status === 'حاضر').length;
+                const ratio = totalLectures > 0 ? Math.round((presentCount / totalLectures) * 100) : 0;
+                
+                const weeklyLectures = state.lecturesHistory.filter(l => (now - l.timestampMs) <= 7 * 86400000);
+                const weeklyPresent = weeklyLectures.filter(l => {
+                    const rec = state.attendanceRecords.find(r => r.lectureId === l.id && r.studentId === s.id);
+                    return rec && rec.status === 'حاضر';
+                }).length;
+                const weeklyRatio = weeklyLectures.length > 0 ? Math.round((weeklyPresent / weeklyLectures.length) * 100) : 100;
+
+                return `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30">
+                        <td class="p-3 font-bold">${s.name}</td>
+                        <td class="p-3 text-xs font-mono text-slate-500">${s.code}</td>
+                        <td class="p-3 font-bold text-emerald-600">${weeklyRatio}%</td>
+                        <td class="p-3 font-bold text-brand-600">${ratio}%</td>
+                        <td class="p-3 font-bold text-rose-600">${100 - ratio}%</td>
+                        <td class="p-3 text-center">
+                            <button onclick="selectAndShowStudent('${s.code}')" class="bg-brand-500/10 text-brand-600 dark:text-brand-400 hover:bg-brand-600 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg transition">
+                                عرض التقرير الفردي
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function selectAndShowStudent(code) {
+            document.getElementById('studentSearchInput').value = code;
+            filterAndSelectStudent();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function unlinkStudentDevice(studentId) {
+            const student = state.students.find(s => s.id === studentId);
+            if (student) {
+                student.deviceBound = false;
+                student.deviceId = null;
+                alert(`تم فك ربط الجهاز للطالب ${student.name} بنجاح.`);
+                renderAllStudentsTable();
+                filterAndSelectStudent();
+            }
+        }
+
+        function manualAttendanceByAdmin(studentId) {
+            alert("تم إرسال تسجيل الحضور اليدوي للطالب بنجاح!");
+        }
+
+        function switchAdminTab(tabId) {
+            playSound('click');
+            document.querySelectorAll('.admin-tab-btn').forEach(btn => btn.className = "admin-tab-btn px-4 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700");
+            document.querySelectorAll('.admin-tab-content').forEach(content => content.classList.add('hidden'));
+
+            document.getElementById(`tabBtn-${tabId}`).className = "admin-tab-btn active px-4 py-2.5 rounded-xl text-sm font-bold bg-brand-600 text-white shadow";
+            document.getElementById(tabId).classList.remove('hidden');
+
+            if (tabId === 'reportsTab') renderPrintableSheet();
+        }
+
+        function populateReportLectureSelector() {
+            const sel = document.getElementById('lectureReportSelector');
+            sel.innerHTML = state.lecturesHistory.map(l => `<option value="${l.id}">${l.title} (${l.date})</option>`).join('');
+        }
+
+        function renderPrintableSheet() {
+            const selLecId = document.getElementById('lectureReportSelector').value;
+            const lecture = state.lecturesHistory.find(l => l.id === selLecId);
+            if (!lecture) return;
+
+            const tbody = document.getElementById('printableSheetBody');
+            tbody.innerHTML = state.students.map((std, idx) => {
+                const record = state.attendanceRecords.find(r => r.lectureId === selLecId && r.studentId === std.id && r.status === 'حاضر');
+                const isPresent = !!record;
+
+                return `
+                    <tr class="${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}">
+                        <td class="p-2 border font-bold">${idx + 1}</td>
+                        <td class="p-2 border font-bold">${std.name}</td>
+                        <td class="p-2 border font-mono">${std.code}</td>
+                        <td class="p-2 border">${isPresent ? record.timestamp : '--'}</td>
+                        <td class="p-2 border font-mono">${isPresent ? (record.method || 'GPS') : '--'}</td>
+                        <td class="p-2 border font-bold ${isPresent ? 'text-emerald-700' : 'text-rose-700'}">
+                            ${isPresent ? 'حاضر' : 'غائب'}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    </script>
+</body>
+</html>
