@@ -81,7 +81,6 @@
     <!-- ===== QR SCANNER MODAL ===== -->
     <div id="qrModal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-xs p-4 relative text-center space-y-3">
-            <!-- زرار الإغلاق المباشر والمستقل 100% -->
             <button onclick="closeQRModal()" class="absolute -top-3 -left-3 w-10 h-10 rounded-full bg-rose-600 text-white font-black text-lg flex items-center justify-center shadow-lg border-2 border-slate-900 cursor-pointer">✕</button>
             
             <h3 class="font-bold text-sm">امسح كود الـ QR</h3>
@@ -96,7 +95,6 @@
     </div>
 
     <script>
-        // إعدادات الفايربيز
         const firebaseConfig = {
             apiKey: "AIzaSyCrajT5UTM7vyTicRHwajaKYhqwDTXTpi8",
             authDomain: "amr1-60aa8.firebaseapp.com",
@@ -115,7 +113,7 @@
         let html5QrcodeScanner = null;
         let activeLectureData = null;
 
-        // التزامن اللحظي المباشر بدون كاش
+        // القراءة المباشرة من السيرفر
         db.ref('activeLecture').on('value', (snap) => {
             activeLectureData = snap.val();
             if (activeLectureData) {
@@ -156,14 +154,14 @@
 
         function toggleRole() {
             if (currentRole === 'student') {
-                const pass = prompt("ادخل كلمة سر الأدمن:");
-                if (pass === 'Amr@2026') {
+                const pass = prompt("ادخل كلمة السر (كلمة السر هي: 1234):");
+                if (pass && pass.trim() === '1234') {
                     currentRole = 'admin';
                     document.getElementById('studentView').classList.add('hidden');
                     document.getElementById('adminView').classList.remove('hidden');
                     document.getElementById('roleStatus').innerText = "واجهة الأدمن";
                 } else {
-                    alert("كلمة السر خاطئة!");
+                    alert("كلمة السر خاطئة! الكلمة هي 1234");
                 }
             } else {
                 currentRole = 'student';
@@ -219,7 +217,6 @@
             } catch(e) {}
         }
 
-        // إغلاق فوري للنافذة 100% بدون أي تعليق
         function closeQRModal() {
             document.getElementById('qrModal').classList.add('hidden');
             if (html5QrcodeScanner) {
