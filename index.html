@@ -123,7 +123,7 @@
         <!-- ==================== ADMIN DASHBOARD ==================== -->
         <div id="adminSection" class="hidden space-y-6">
 
-            <!-- Admin Nav Tabs مع زر X أسود -->
+            <!-- Admin Nav Tabs -->
             <div class="no-print bg-white dark:bg-slate-800 p-2 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-2">
                 <div class="flex flex-wrap gap-2">
                     <button onclick="switchAdminTab('sessionTab')" id="tabBtn-sessionTab" class="admin-tab-btn active px-3.5 py-2 rounded-xl text-xs font-bold bg-brand-600 text-white shadow">
@@ -412,11 +412,10 @@
 
     </main>
 
-    <!-- Student Registration Modal (محدثة بزر إغلاق بارز ومستقل) -->
+    <!-- Student Registration Modal -->
     <div id="studentRegisterModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
         <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4 relative">
             
-            <!-- زر إغلاق X أسود دائري وبارز فوق النافذة بوضوح -->
             <button type="button" onclick="closeStudentLoginModal()" class="absolute -top-3 -left-3 w-10 h-10 rounded-full bg-slate-200 hover:bg-rose-600 hover:text-white text-slate-900 shadow-xl border-2 border-white dark:border-slate-700 flex items-center justify-center transition duration-150 cursor-pointer z-50" title="إغلاق والرجوع للموقع">
                 <i class="fa-solid fa-xmark text-xl font-black text-slate-900 hover:text-white"></i>
             </button>
@@ -446,7 +445,7 @@
         </div>
     </div>
 
-    <!-- Admin Password Modal مع زر X أسود -->
+    <!-- Admin Password Modal -->
     <div id="adminAuthModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
         <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-xs w-full p-5 shadow-2xl border border-slate-200 dark:border-slate-700 relative">
             <button type="button" onclick="cancelAdminAuth()" class="absolute top-3 left-3 w-8 h-8 rounded-full bg-slate-200 hover:bg-rose-500 hover:text-white transition flex items-center justify-center shadow font-bold cursor-pointer">
@@ -535,6 +534,9 @@
                     state.activeStudentId = found.id;
                     loadStudentData();
                     return;
+                } else {
+                    // إذا كان الكود المقترن محذوفاً من جدول الطلاب، قم بفك الاقتران تلقائياً
+                    localStorage.removeItem('app_bound_student_code');
                 }
             }
             openStudentLoginModal();
@@ -562,10 +564,17 @@
 
             const lockedStudentCodeOnPhone = localStorage.getItem('app_bound_student_code');
 
+            // التأكد مما إذا كان الطالب صاحب الاقتران القديم ما زال موجوداً
             if (lockedStudentCodeOnPhone && lockedStudentCodeOnPhone !== code) {
-                errEl.innerText = `عذراً! هذا الهاتف مقترن بالفعل بطالب آخر (${lockedStudentCodeOnPhone}). لا يمكنك التسجيل لزميلك بنفس الجهاز!`;
-                errEl.classList.remove('hidden');
-                return;
+                const boundStudentExists = state.students.some(s => s.code === lockedStudentCodeOnPhone);
+                if (boundStudentExists) {
+                    errEl.innerText = `عذراً! هذا الهاتف مقترن بالفعل بطالب آخر (${lockedStudentCodeOnPhone}). لا يمكنك التسجيل لزميلك بنفس الجهاز!`;
+                    errEl.classList.remove('hidden');
+                    return;
+                } else {
+                    // الطالب المحذوف لم يعد موجوداً؛ تفريغ القفل القديم
+                    localStorage.removeItem('app_bound_student_code');
+                }
             }
 
             let student = state.students.find(s => s.code === code);
