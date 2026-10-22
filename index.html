@@ -196,10 +196,9 @@
                             <span class="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-500/30">الجلسة النشطة المباشرة</span>
                             <h3 id="adminActiveTitle" class="text-lg font-bold mt-1">--</h3>
                         </div>
-                        <!-- زرار إغلاق المحاضرة الفوري الشامل لكل الأجهزة -->
-                        <button onclick="cancelActiveLecture()" class="bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center gap-1.5">
+                        <button onclick="cancelActiveLecture()" class="bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow flex items-center gap-1.5 cursor-pointer">
                             <i class="fa-solid fa-power-off"></i>
-                            <span>إغلاق المحاضرة فوراً من كل الهواتف</span>
+                            <span>إغلاق المحاضرة فوراً من كل الأجهزة</span>
                         </button>
                     </div>
 
@@ -440,8 +439,8 @@
     <div id="scannerModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden no-print">
         <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4 relative text-center">
             
-            <!-- زرار الإغلاق المباشر والمضمون 100% بدون أي تعليق -->
-            <button type="button" onclick="closeScannerModal()" class="absolute top-3 left-3 w-10 h-10 rounded-full bg-slate-200 hover:bg-rose-600 hover:text-white transition flex items-center justify-center shadow-lg font-bold text-slate-900 z-50 cursor-pointer" title="إغلاق">
+            <!-- زرار الإغلاق المباشر بنسبة 100% بدون الاعتماد على مكتبات الكاميرا -->
+            <button type="button" onclick="forceCloseScannerModal()" class="absolute top-3 left-3 w-10 h-10 rounded-full bg-slate-200 hover:bg-rose-600 hover:text-white transition flex items-center justify-center shadow-lg font-bold text-slate-900 z-[100] cursor-pointer" title="إغلاق">
                 <i class="fa-solid fa-xmark text-xl"></i>
             </button>
             
@@ -526,7 +525,7 @@
                 </div>
             </form>
         </div>
-    </div>
+    </header>
 
     <!-- Application Script Logic -->
     <script>
@@ -540,12 +539,16 @@
             appId: "1:831137627248:web:ad98adb7dd0274d73748b5"
         };
 
+        // مسح الذاكرة المحلية القديمة لتنظيف متصفح الهواتف تماماً
+        localStorage.removeItem('app_lectures_db');
+        localStorage.removeItem('app_attendance_db');
+
         let db = null;
         try {
             firebase.initializeApp(firebaseConfig);
             db = firebase.database();
         } catch(e) {
-            console.log("خطأ بالفايربيز:", e);
+            console.log("خطأ في الاتصال بالفياربيز:", e);
         }
 
         let audioCtx = null;
@@ -602,11 +605,10 @@
             listenToRealtimeCloudUpdates();
         };
 
-        // الربط المباشر الموحد لجميع الهواتف والكمبيوتر مع السيرفر السحابي
+        // البث المباشر الكامل من الفايربيز
         function listenToRealtimeCloudUpdates() {
             if (!db) return;
 
-            // 1. مزامنة بيانات الطلاب من السيرفر فورياً
             db.ref('students').on('value', (snapshot) => {
                 const stds = snapshot.val();
                 state.students = stds ? Object.values(stds) : [];
@@ -615,7 +617,6 @@
                 renderPrintableSheet();
             });
 
-            // 2. مزامنة تاريخ المحاضرات من السيرفر فورياً
             db.ref('lecturesHistory').on('value', (snapshot) => {
                 const lecs = snapshot.val();
                 state.lecturesHistory = lecs ? Object.values(lecs).reverse() : [];
@@ -623,7 +624,6 @@
                 renderPrintableSheet();
             });
 
-            // 3. المزامنة اللحظية للجلسة المباشرة
             db.ref('activeLecture').on('value', (snapshot) => {
                 const activeLec = snapshot.val();
                 state.activeLecture = activeLec;
@@ -643,7 +643,6 @@
                 }
             });
 
-            // 4. مزامنة كود الـ QR المتغير لحظياً
             db.ref('currentDynamicToken').on('value', (snapshot) => {
                 const token = snapshot.val();
                 if (token) {
@@ -664,7 +663,6 @@
                 }
             });
 
-            // 5. مزامنة سجلات الحضور المباشرة
             db.ref('attendanceRecords').on('value', (snapshot) => {
                 const records = snapshot.val();
                 state.attendanceRecords = records ? Object.values(records) : [];
@@ -916,7 +914,7 @@
             `);
         }
 
-        // إلغاء المحاضرة ومسحها فوراً من السيرفر لإخفائها من أجهزة كافة الطلاب
+        // مسح المحاضرة فورياً من السيرفر لإغلاقها من كافة هواتف الطلاب
         function cancelActiveLecture() {
             if (qrGeneratorInterval) clearInterval(qrGeneratorInterval);
             if (dedicatedQrWindow && !dedicatedQrWindow.closed) dedicatedQrWindow.close();
@@ -1021,7 +1019,6 @@
             }
         }
 
-        // فتح الكاميرا بآلية آمنة لمنع تعليق زرار الإغلاق
         function openScannerModal() {
             if (!state.activeLecture) {
                 alert("لا توجد جلسة حضور نشطة حالياً!");
@@ -1038,26 +1035,22 @@
                         { fps: 10, qrbox: { width: 200, height: 200 } },
                         onScanSuccess
                     ).catch(err => {
-                        console.log("تعذر فتح الكاميرا تلقائياً، يمكنك إدخال الكود يدوياً.");
+                        console.log("تعذر فتح الكاميرا تلقائياً، استخدم الإدخال اليدوي للكود.");
                     });
                 } catch(e) {
-                    console.log("خطأ بالكاميرا.");
+                    console.log("خطأ في تشغيل الكاميرا.");
                 }
             }
         }
 
-        // إغلاق نافذة الـ QR فوراً بدون أي تهنيج لزرار X
-        function closeScannerModal() {
+        // إغلاق فورية ومباشرة للنافذة وبدون أي توقف أو تهنيج لزر (X)
+        function forceCloseScannerModal() {
             const modal = document.getElementById('scannerModal');
+            modal.classList.add('hidden');
             if (html5QrScanner) {
-                html5QrScanner.stop().then(() => {
-                    html5QrScanner.clear();
-                    modal.classList.add('hidden');
-                }).catch(() => {
-                    modal.classList.add('hidden');
-                });
-            } else {
-                modal.classList.add('hidden');
+                try {
+                    html5QrScanner.stop().then(() => html5QrScanner.clear()).catch(() => {});
+                } catch(e) {}
             }
         }
 
@@ -1076,7 +1069,7 @@
 
             if (db) db.ref('attendanceRecords').push(newRecord);
 
-            closeScannerModal();
+            forceCloseScannerModal();
             
             const feedback = document.getElementById('attendanceFeedback');
             feedback.classList.remove('hidden');
