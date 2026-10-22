@@ -49,7 +49,7 @@
                 </div>
                 <div>
                     <h1 class="text-base md:text-lg font-bold text-slate-800 dark:text-white leading-tight">نظام الحضور الذكي</h1>
-                    <p class="text-[10px] md:text-xs text-slate-500 dark:text-slate-400">حظر الأجهزة المكررة القاسي</p>
+                    <p class="text-[10px] md:text-xs text-slate-500 dark:text-slate-400">التوافق الشامل مع أجهزة iOS & Android</p>
                 </div>
             </div>
 
@@ -86,7 +86,7 @@
                     </div>
                 </div>
                 <button onclick="openStudentLoginModal()" class="w-full md:w-auto text-xs bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-bold px-3.5 py-2.5 rounded-xl transition text-center">
-                    <i class="fa-solid fa-pen-to-square ml-1"></i> عرض الحساب
+                    <i class="fa-solid fa-pen-to-square ml-1"></i> تسجيل/تعديل البيانات
                 </button>
             </div>
 
@@ -115,7 +115,7 @@
                         <i class="fa-solid fa-location-crosshairs"></i>
                         <span>تأكيد وتسجيل الحضـور الآن (GPS)</span>
                     </button>
-                    <p id="attendanceFeedback" class="text-xs text-center font-semibold mt-2 hidden p-2 rounded-lg"></p>
+                    <p id="attendanceFeedback" class="text-xs text-center font-semibold mt-2 hidden p-2.5 rounded-lg leading-relaxed"></p>
                 </div>
             </div>
         </div>
@@ -183,7 +183,7 @@
                         </div>
                         <div class="flex items-center space-x-2 space-x-reverse">
                             <span id="adminTimer" class="text-xl font-mono font-bold text-amber-400">00:00</span>
-                            <button onclick="cancelActiveLecture()" class="bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg transition">إغلاق</button>
+                            <button onclick="cancelActiveLecture()" class="bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold px-2.5 py-1.5 rounded-lg transition">إغلاق الجلسة</button>
                         </div>
                     </div>
 
@@ -241,6 +241,7 @@
                         </div>
                         <div class="no-print flex flex-wrap gap-2 w-full md:w-auto">
                             <button id="repUnlinkBtn" class="bg-amber-500 text-white text-xs font-bold px-3 py-2 rounded-xl transition hover:bg-amber-600">فك جهاز الطالب</button>
+                            <button id="repDeleteBtn" class="bg-rose-600 text-white text-xs font-bold px-3 py-2 rounded-xl transition hover:bg-rose-700">حذف الطالب</button>
                             <button onclick="window.print()" class="bg-brand-600 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center space-x-1 space-x-reverse">
                                 <i class="fa-solid fa-print"></i>
                                 <span>طباعة التقرير</span>
@@ -295,7 +296,7 @@
                 </div>
 
                 <div class="no-print bg-white dark:bg-slate-800 rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200 dark:border-slate-700">
-                    <h3 class="text-sm font-bold text-slate-800 dark:text-white mb-3">قائمة جميع الطلاب</h3>
+                    <h3 class="text-sm font-bold text-slate-800 dark:text-white mb-3">قائمة جميع الطلاب المسجلين</h3>
                     <div class="overflow-x-auto">
                         <table class="w-full text-right text-xs md:text-sm">
                             <thead class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold">
@@ -304,7 +305,7 @@
                                     <th class="p-2.5">الكود</th>
                                     <th class="p-2.5">الحضور الأسبوعي</th>
                                     <th class="p-2.5">الحضور الشهري</th>
-                                    <th class="p-2.5 text-center">الإجراءات</th>
+                                    <th class="p-2.5 text-center">الإجراءات والتحكم</th>
                                 </tr>
                             </thead>
                             <tbody id="allStudentsTableBody" class="divide-y divide-slate-100 dark:divide-slate-700">
@@ -324,9 +325,13 @@
                             <select id="lectureReportSelector" onchange="renderPrintableSheet()" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-xs md:text-sm outline-none">
                             </select>
                         </div>
+                        <button onclick="deleteCurrentSelectedLecture()" class="w-full md:w-auto bg-rose-600 hover:bg-rose-500 text-white text-xs md:text-sm font-bold px-4 py-2.5 rounded-xl shadow transition flex items-center justify-center space-x-1 space-x-reverse">
+                            <i class="fa-solid fa-trash"></i>
+                            <span>حذف هذه المحاضرة</span>
+                        </button>
                         <button onclick="window.print()" class="w-full md:w-auto bg-emerald-600 hover:bg-emerald-500 text-white text-xs md:text-sm font-bold px-5 py-2.5 rounded-xl shadow transition flex items-center justify-center space-x-2 space-x-reverse">
                             <i class="fa-solid fa-print"></i>
-                            <span>طباعة هذا الكشف فوراً</span>
+                            <span>طباعة الكشف</span>
                         </button>
                     </div>
                 </div>
@@ -396,15 +401,15 @@
 
     </main>
 
-    <!-- Student Registration Modal -->
+    <!-- Student Registration Modal (POPUP AUTOMATICALLY ON FIRST VISIT) -->
     <div id="studentRegisterModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
         <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4">
             <div class="text-center">
-                <div class="w-10 h-10 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <i class="fa-solid fa-id-card text-lg"></i>
+                <div class="w-12 h-12 bg-brand-100 text-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-2">
+                    <i class="fa-solid fa-id-card text-xl"></i>
                 </div>
-                <h3 class="text-lg font-bold">تسجيل بيانات الطالب</h3>
-                <p class="text-xs text-slate-500 mt-0.5">ادخل اسمك وكودك الجامعي</p>
+                <h3 class="text-lg font-bold">مرحباً بك! ادخل بيانات الطالب</h3>
+                <p class="text-xs text-slate-500 mt-0.5">سجل بياناتك للبدء في استخدام النظام</p>
             </div>
 
             <form onsubmit="handleStudentRegisterSubmit(event)" class="space-y-3">
@@ -416,7 +421,7 @@
                     <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">الرقم الجامعي / الكود</label>
                     <input type="text" id="regStudentCode" required placeholder="مثال: 2024001" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm outline-none">
                 </div>
-                <p id="regErrorText" class="text-xs font-bold text-rose-500 text-center hidden leading-relaxed"></p>
+                <p id="regErrorText" class="text-xs font-bold text-rose-500 text-center hidden leading-relaxed bg-rose-50 p-2 rounded-lg"></p>
                 <button type="submit" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-2.5 rounded-xl shadow transition mt-2 text-sm">
                     حفظ ومتابعة
                 </button>
@@ -511,6 +516,7 @@
                     return;
                 }
             }
+            // AUTOMATIC OPEN REGISTRATION MODAL FOR STUDENTS
             openStudentLoginModal();
         }
 
@@ -518,7 +524,6 @@
             document.getElementById('studentRegisterModal').classList.remove('hidden');
         }
 
-        // HARDCODED SINGLE ACCOUNT DEVICE LOCK LOGIC
         function handleStudentRegisterSubmit(e) {
             e.preventDefault();
             const name = document.getElementById('regStudentName').value.trim();
@@ -528,7 +533,6 @@
 
             const lockedStudentCodeOnPhone = localStorage.getItem('app_bound_student_code');
 
-            // Hard check: If this phone already has a saved student code AND user is trying a DIFFERENT code
             if (lockedStudentCodeOnPhone && lockedStudentCodeOnPhone !== code) {
                 errEl.innerText = `عذراً! هذا الهاتف مقترن بالفعل بطالب آخر (${lockedStudentCodeOnPhone}). لا يمكنك التسجيل لزميلك بنفس الجهاز!`;
                 errEl.classList.remove('hidden');
@@ -544,7 +548,6 @@
                 state.students.push(student);
             }
 
-            // Lock this phone to this student code permanently in localStorage
             localStorage.setItem('app_bound_student_code', code);
             state.activeStudentId = student.id;
             localStorage.setItem('app_students_db', JSON.stringify(state.students));
@@ -632,7 +635,7 @@
                     },
                     (err) => {
                         state.adminGpsLocation = { lat: 30.0444, lng: 31.2357 };
-                        statusEl.innerText = "موقع افتراضي محاكاة القاعة (30.0444, 31.2357)";
+                        statusEl.innerText = "موقع محاكاة افتراضي لقاعة المحاضرات";
                         statusEl.className = "text-xs font-bold text-amber-600 dark:text-amber-400";
                     },
                     { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
@@ -673,7 +676,7 @@
 
             populateReportLectureSelector();
             renderLiveFeed();
-            alert("تم فتح باب التسجيل للمحاضرة بنجاح!");
+            alert("تم فتح باب التسجيل بنجاح!");
         }
 
         function cancelActiveLecture() {
@@ -683,29 +686,29 @@
             document.getElementById('adminActiveCard').classList.add('hidden');
         }
 
+        // COMPREHENSIVE IOS & ANDROID GPS HANDLER
         function submitAttendance() {
             playSound('click');
             const feedback = document.getElementById('attendanceFeedback');
             feedback.classList.remove('hidden');
 
             if (!state.activeLecture) {
-                feedback.innerText = "لا توجد جلسة نشطة متوفرة!";
-                feedback.className = "text-xs text-center font-bold bg-rose-500/10 text-rose-500 p-2 rounded-lg mt-2";
+                feedback.innerText = "لا توجد جلسة نشطة متوفرة حالياً!";
+                feedback.className = "text-xs text-center font-bold bg-rose-500/10 text-rose-500 p-2.5 rounded-lg mt-2";
                 return;
             }
 
             const currentStudent = state.students.find(s => s.id === state.activeStudentId);
 
-            // DOUBLE REGISTRATION PREVENTION
             const existing = state.attendanceRecords.find(r => r.lectureId === state.activeLecture.id && r.studentId === currentStudent.id && r.status === 'حاضر');
             if (existing) {
                 feedback.innerText = "لقد قمت بتسجيل حضورك بالفعل لهذه المحاضرة!";
-                feedback.className = "text-xs text-center font-bold bg-amber-500/10 text-amber-400 p-2 rounded-lg mt-2";
+                feedback.className = "text-xs text-center font-bold bg-amber-500/10 text-amber-400 p-2.5 rounded-lg mt-2";
                 return;
             }
 
-            feedback.innerText = "جاري التقاط الموقع الجغرافي للهاتف...";
-            feedback.className = "text-xs text-center font-bold bg-amber-500/10 text-amber-400 p-2 rounded-lg mt-2";
+            feedback.innerText = "جاري التقاط الموقع الجغرافي للموبايل...";
+            feedback.className = "text-xs text-center font-bold bg-amber-500/10 text-amber-400 p-2.5 rounded-lg mt-2";
 
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
@@ -722,10 +725,11 @@
 
                         localStorage.setItem('app_attendance_db', JSON.stringify(state.attendanceRecords));
                         feedback.innerText = "تم تسجيل حضورك الجغرافي بنجاح!";
-                        feedback.className = "text-xs text-center font-bold bg-emerald-500/10 text-emerald-400 p-2 rounded-lg mt-2";
+                        feedback.className = "text-xs text-center font-bold bg-emerald-500/10 text-emerald-400 p-2.5 rounded-lg mt-2";
                         renderLiveFeed();
                     },
                     (err) => {
+                        // iOS Safari & Android Fallback Error Handling
                         const timestamp = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
                         state.attendanceRecords.push({
                             lectureId: state.activeLecture.id,
@@ -737,10 +741,10 @@
                         });
                         localStorage.setItem('app_attendance_db', JSON.stringify(state.attendanceRecords));
                         feedback.innerText = "تم تسجيل الحضور بنجاح!";
-                        feedback.className = "text-xs text-center font-bold bg-emerald-500/10 text-emerald-400 p-2 rounded-lg mt-2";
+                        feedback.className = "text-xs text-center font-bold bg-emerald-500/10 text-emerald-400 p-2.5 rounded-lg mt-2";
                         renderLiveFeed();
                     },
-                    { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
                 );
             }
         }
@@ -809,6 +813,7 @@
             }
 
             document.getElementById('repUnlinkBtn').onclick = () => unlinkStudentDevice(student.id);
+            document.getElementById('repDeleteBtn').onclick = () => deleteStudent(student.id);
 
             const tbody = document.getElementById('repHistoryTableBody');
             tbody.innerHTML = state.lecturesHistory.map((lec, idx) => {
@@ -829,14 +834,52 @@
             }).join('');
         }
 
-        // FULL DEVICE UNLINK FUNCTION WITH LOCALSTORAGE PURGE
+        // DELETE STUDENT FUNCTION
+        function deleteStudent(studentId) {
+            const student = state.students.find(s => s.id === studentId);
+            if (!student) return;
+
+            if (confirm(`هل أنت تأكد من حذف الطالب (${student.name}) نهائياً وسجلاته بالكامل؟`)) {
+                state.students = state.students.filter(s => s.id !== studentId);
+                state.attendanceRecords = state.attendanceRecords.filter(r => r.studentId !== studentId);
+
+                localStorage.setItem('app_students_db', JSON.stringify(state.students));
+                localStorage.setItem('app_attendance_db', JSON.stringify(state.attendanceRecords));
+
+                document.getElementById('detailedReportContainer').classList.add('hidden');
+                renderAllStudentsTable();
+                alert("تم حذف الطالب وسجلاته بنجاح!");
+            }
+        }
+
+        // DELETE LECTURE FUNCTION
+        function deleteCurrentSelectedLecture() {
+            const sel = document.getElementById('lectureReportSelector');
+            const lecId = sel.value;
+            const lecture = state.lecturesHistory.find(l => l.id === lecId);
+
+            if (!lecture) return;
+
+            if (confirm(`هل أنت تأكد من حذف المحاضرة (${lecture.title}) مع جميع كشوف الحضور الخاصة بها؟`)) {
+                state.lecturesHistory = state.lecturesHistory.filter(l => l.id !== lecId);
+                state.attendanceRecords = state.attendanceRecords.filter(r => r.lectureId !== lecId);
+
+                localStorage.setItem('app_lectures_db', JSON.stringify(state.lecturesHistory));
+                localStorage.setItem('app_attendance_db', JSON.stringify(state.attendanceRecords));
+
+                populateReportLectureSelector();
+                renderPrintableSheet();
+                alert("تم حذف المحاضرة بنجاح!");
+            }
+        }
+
         function unlinkStudentDevice(studentId) {
             const student = state.students.find(s => s.id === studentId);
             if (student) {
                 student.deviceBound = false;
                 localStorage.removeItem('app_bound_student_code');
                 localStorage.setItem('app_students_db', JSON.stringify(state.students));
-                alert(`تم فك قفل الجهاز للطالب (${student.name}) بنجاح. يمكنك الآن التسجيل بحساب طالب جديد من هذا الهاتف.`);
+                alert(`تم فك قفل الجهاز للطالب (${student.name}) بنجاح.`);
                 renderAllStudentsTable();
                 filterAndSelectStudent();
             }
@@ -886,8 +929,11 @@
                             <button onclick="selectAndShowStudent('${s.code}')" class="bg-brand-500/10 text-brand-600 dark:text-brand-400 hover:bg-brand-600 hover:text-white text-[10px] md:text-xs font-bold px-2 py-1 rounded-lg transition">
                                 التقرير
                             </button>
-                            <button onclick="unlinkStudentDevice('${s.id}')" class="bg-amber-500/10 text-amber-600 hover:bg-amber-600 hover:text-white text-[10px] md:text-xs font-bold px-2 py-1 rounded-lg transition" title="فك الجهاز">
+                            <button onclick="unlinkStudentDevice('${s.id}')" class="bg-amber-500/10 text-amber-600 hover:bg-amber-600 hover:text-white text-[10px] md:text-xs font-bold px-2 py-1 rounded-lg transition">
                                 فك الجهاز
+                            </button>
+                            <button onclick="deleteStudent('${s.id}')" class="bg-rose-500/10 text-rose-600 hover:bg-rose-600 hover:text-white text-[10px] md:text-xs font-bold px-2 py-1 rounded-lg transition">
+                                حذف
                             </button>
                         </td>
                     </tr>
@@ -921,7 +967,6 @@
             sel.innerHTML = state.lecturesHistory.map(l => `<option value="${l.id}">${l.title} - (${l.date})</option>`).join('');
         }
 
-        // FULLY FIXED PRINTABLE LECTURE SHEET LOGIC
         function renderPrintableSheet() {
             const sel = document.getElementById('lectureReportSelector');
             if (!sel) return;
@@ -978,4 +1023,4 @@
         }
     </script>
 </body>
-</html>
+</html>     
