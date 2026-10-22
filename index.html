@@ -42,7 +42,6 @@
             .print-container { width: 100% !important; margin: 0 !important; box-shadow: none !important; border: none !important; }
         }
         .print-only { display: none; }
-        #qr-reader video { border-radius: 1rem; width: 100% !important; object-fit: cover; }
     </style>
 </head>
 <body class="bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-200">
@@ -114,15 +113,8 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <button id="markAttendanceBtn" onclick="submitAttendanceGPS()" class="w-full bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold py-3.5 rounded-xl shadow-lg transition duration-150 flex items-center justify-center space-x-2 space-x-reverse text-sm md:text-base">
-                            <i class="fa-solid fa-location-crosshairs"></i>
-                            <span>تأكيد الحضور بـ GPS الصارم</span>
-                        </button>
-                        <button onclick="openScannerModal()" class="w-full bg-brand-600 hover:bg-brand-500 active:scale-95 text-white font-bold py-3.5 rounded-xl shadow-lg transition duration-150 flex items-center justify-center space-x-2 space-x-reverse text-sm md:text-base">
-                            <i class="fa-solid fa-qrcode"></i>
-                            <span>مسح رمز QR القاعة المباشر</span>
-                        </button>
+                    <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700 text-center space-y-2">
+                        <p class="text-xs text-sky-400 font-bold">امسح كود الـ QR المعروض على البروجكتور بكاميرا هاتفك العادية لتسجيل الحضور فوراً!</p>
                     </div>
 
                     <p id="attendanceFeedback" class="text-xs text-center font-semibold mt-2 hidden p-2.5 rounded-lg leading-relaxed"></p>
@@ -204,7 +196,7 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
                         <div class="bg-white p-4 rounded-2xl flex flex-col items-center justify-center text-slate-900 shadow-inner space-y-3">
-                            <span class="text-xs font-bold text-slate-600 text-center">اعرض هذا الرمز على شاشة القاعة (يتغير كل 5 ثوانٍ):</span>
+                            <span class="text-xs font-bold text-slate-600 text-center">امسح هذا الرمز بكاميرا الموبايل العادية (يتغير كل 5 ثوانٍ):</span>
                             
                             <div class="p-3 bg-slate-50 rounded-2xl border-2 border-brand-500 flex flex-col items-center">
                                 <img id="dynamicQrImg" src="" alt="رمز QR المباشر" class="w-44 h-44 object-contain">
@@ -384,7 +376,7 @@
                         </div>
                         <div class="text-left text-xs text-slate-600 font-semibold space-y-1">
                             <p>تاريخ الجلسة: <span id="printLectureDateHeader" class="font-bold">--</span></p>
-                            <p>حالة الكشف: <span class="text-emerald-700 font-bold">معتمد رسمياً (GPS + QR)</span></p>
+                            <p>حالة الكشف: <span class="text-emerald-700 font-bold">معتمد رسمياً (كاميرا الموبايل العادية)</span></p>
                         </div>
                     </div>
 
@@ -421,7 +413,7 @@
                     <div class="mt-10 pt-6 border-t border-slate-300 flex justify-between items-end text-xs">
                         <div>
                             <p class="font-bold">ملاحظات التوثيق:</p>
-                            <p class="text-slate-500">تم رصد الحضور إلكترونياً وتوثيق البصمة المكانية والجغرافية للقاعة.</p>
+                            <p class="text-slate-500">تم رصد الحضور إلكترونياً وتوثيق عبر مسح كاميرا الهاتف.</p>
                         </div>
                         <div class="text-center px-8">
                             <p class="font-bold mb-6">توقيع أستاذ المادة / المحاضر</p>
@@ -435,47 +427,16 @@
 
     </main>
 
-    <!-- Student Scanner Modal -->
-    <div id="scannerModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden no-print">
-        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4 relative text-center">
-            
-            <button type="button" onclick="forceCloseScannerModal()" class="absolute top-3 left-3 w-10 h-10 rounded-full bg-slate-200 hover:bg-rose-600 hover:text-white transition flex items-center justify-center shadow-lg font-bold text-slate-900 z-[100] cursor-pointer" title="إغلاق">
-                <i class="fa-solid fa-xmark text-xl"></i>
-            </button>
-            
-            <div>
-                <h3 class="text-lg font-extrabold text-slate-800 dark:text-white">امسح رمز QR المعروض بالقاعة</h3>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">وجه كاميرا هاتف نحو الشاشة لتأكيد وجودك داخل الغرفة</p>
-            </div>
-
-            <div id="qr-reader" class="overflow-hidden rounded-2xl border-2 border-dashed border-brand-500 bg-slate-100 dark:bg-slate-900 min-h-[220px]"></div>
-
-            <div class="border-t border-slate-200 dark:border-slate-700 pt-3 text-right">
-                <label class="block text-[11px] font-bold text-slate-500 mb-1">أو ادخل الكود المعروض أسفل الرمز على الشاشة:</label>
-                <div class="flex gap-2">
-                    <input type="text" id="manualTokenInput" placeholder="ادخل الكود..." class="w-full bg-slate-50 dark:bg-slate-700 border rounded-xl px-3 py-1.5 text-xs outline-none">
-                    <button type="button" onclick="verifyManualToken()" class="bg-brand-600 text-white font-bold text-xs px-3 py-1.5 rounded-xl">تأكيد</button>
-                </div>
-            </div>
-
-            <p id="scannerFeedback" class="text-xs font-bold text-amber-500 bg-amber-500/10 p-2 rounded-xl hidden"></p>
-        </div>
-    </div>
-
     <!-- Student Registration Modal -->
     <div id="studentRegisterModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
         <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4 relative">
             
-            <button type="button" onclick="closeStudentLoginModal()" class="absolute -top-3 -left-3 w-10 h-10 rounded-full bg-slate-200 hover:bg-rose-600 hover:text-white text-slate-900 shadow-xl border-2 border-white dark:border-slate-700 flex items-center justify-center transition duration-150 cursor-pointer z-50" title="إغلاق والرجوع للموقع">
-                <i class="fa-solid fa-xmark text-xl font-black text-slate-900"></i>
-            </button>
-
             <div class="text-center pt-1">
                 <div class="w-12 h-12 bg-brand-100 text-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-2">
                     <i class="fa-solid fa-id-card text-xl"></i>
                 </div>
                 <h3 class="text-lg font-bold">مرحباً بك! ادخل بيانات الطالب</h3>
-                <p class="text-xs text-slate-500 mt-0.5">سجل بياناتك للبدء في استخدام النظام</p>
+                <p class="text-xs text-slate-500 mt-0.5">سجل بياناتك مرة واحدة فقط للبدء</p>
             </div>
 
             <form onsubmit="handleStudentRegisterSubmit(event)" class="space-y-3">
@@ -493,7 +454,7 @@
                 </div>
 
                 <button type="submit" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-2.5 rounded-xl shadow transition mt-2 text-sm">
-                    حفظ ومتابعة
+                    حفظ ومتابعة تسجيل الحضور
                 </button>
             </form>
         </div>
@@ -538,9 +499,6 @@
             appId: "1:831137627248:web:ad98adb7dd0274d73748b5"
         };
 
-        localStorage.removeItem('app_lectures_db');
-        localStorage.removeItem('app_attendance_db');
-
         let db = null;
         try {
             firebase.initializeApp(firebaseConfig);
@@ -551,7 +509,6 @@
 
         let audioCtx = null;
         let soundEnabled = true;
-        let html5QrScanner = null;
         let qrGeneratorInterval = null;
         let dedicatedQrWindow = null;
 
@@ -591,7 +548,6 @@
             currentRole: 'student',
             activeStudentId: null,
             activeLecture: null,
-            adminGpsLocation: null,
             currentDynamicToken: "",
             students: [],
             lecturesHistory: [],
@@ -609,7 +565,7 @@
             db.ref('students').on('value', (snapshot) => {
                 const stds = snapshot.val();
                 state.students = stds ? Object.values(stds) : [];
-                checkExistingStudentSession();
+                checkAndHandleUrlToken();
                 renderAllStudentsTable();
                 renderPrintableSheet();
             });
@@ -638,18 +594,23 @@
                     document.getElementById('activeLectureState').classList.add('hidden');
                     document.getElementById('adminActiveCard').classList.add('hidden');
                 }
+                checkAndHandleUrlToken();
             });
 
             db.ref('currentDynamicToken').on('value', (snapshot) => {
                 const token = snapshot.val();
                 if (token) {
                     state.currentDynamicToken = token;
-                    const qrImg = document.getElementById('dynamicQrImg');
                     const codeLabel = document.getElementById('dynamicCodeLabel');
-                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${token}`;
-                    
-                    if (qrImg) qrImg.src = qrUrl;
                     if (codeLabel) codeLabel.innerText = `CODE: ${token}`;
+
+                    // توليد رابط مباشر للطالب داخل كود الـ QR
+                    const baseUrl = window.location.href.split('?')[0];
+                    const studentScanUrl = `${baseUrl}?scan_token=${token}`;
+                    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(studentScanUrl)}`;
+                    
+                    const qrImg = document.getElementById('dynamicQrImg');
+                    if (qrImg) qrImg.src = qrUrl;
 
                     if (dedicatedQrWindow && !dedicatedQrWindow.closed) {
                         const winImg = dedicatedQrWindow.document.getElementById('winQrImg');
@@ -669,6 +630,66 @@
             });
         }
 
+        // معالجة دخول الطالب تلقائياً من خلال كاميرا الموبايل العادية عبر الرابط
+        function checkAndHandleUrlToken() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const scanToken = urlParams.get('scan_token');
+
+            if (!scanToken) return;
+
+            const boundCode = localStorage.getItem('app_bound_student_code');
+            if (!boundCode) {
+                // لو الطالب لسه مسجلش بياناته على الجهاز، نفتح له نافذة التسجيل
+                openStudentLoginModal();
+                return;
+            }
+
+            const currentStudent = state.students.find(s => s.code === boundCode);
+            if (!currentStudent) {
+                openStudentLoginModal();
+                return;
+            }
+
+            state.activeStudentId = currentStudent.id;
+            loadStudentData();
+
+            if (!state.activeLecture) {
+                alert("عذراً، انتهت هذه المحاضرة أو لا توجد جلسة نشطة حالياً.");
+                return;
+            }
+
+            // التحقق من عدم تسجيل الحضور مسبقاً لهذه المحاضرة
+            const existing = state.attendanceRecords.find(r => r.lectureId === state.activeLecture.id && r.studentId === currentStudent.id && r.status === 'حاضر');
+            
+            const feedback = document.getElementById('attendanceFeedback');
+            feedback.classList.remove('hidden');
+
+            if (existing) {
+                feedback.innerText = "لقد قمت بتسجيل حضورك بالفعل لهذه المحاضرة مسبقاً!";
+                feedback.className = "text-xs text-center font-bold bg-amber-500/10 text-amber-400 p-2.5 rounded-lg mt-2";
+                return;
+            }
+
+            // تسجيل الحضور فوراً وبنجاح تام
+            const timestamp = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+            const newRecord = {
+                lectureId: state.activeLecture.id,
+                studentId: currentStudent.id,
+                timestamp: timestamp,
+                distance: 0,
+                status: 'حاضر',
+                method: 'كاميرا الموبايل العادية'
+            };
+
+            if (db) db.ref('attendanceRecords').push(newRecord);
+
+            feedback.innerText = `مرحباً ${currentStudent.name!}, تم توثيق حضورك بنجاح عبر مسح الكود!`;
+            feedback.className = "text-xs text-center font-bold bg-emerald-500/10 text-emerald-400 p-2.5 rounded-lg mt-2";
+
+            // تنظيف الرابط بعد التسجيل لمنع التكرار
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
         function checkExistingStudentSession() {
             const boundCode = localStorage.getItem('app_bound_student_code');
             if (boundCode) {
@@ -679,20 +700,10 @@
                     return;
                 }
             }
-            openStudentLoginModal();
         }
 
         function openStudentLoginModal() {
             document.getElementById('studentRegisterModal').classList.remove('hidden');
-        }
-
-        function closeStudentLoginModal() {
-            document.getElementById('studentRegisterModal').classList.add('hidden');
-        }
-
-        function closeDetailedReport() {
-            document.getElementById('detailedReportContainer').classList.add('hidden');
-            document.getElementById('studentSearchInput').value = '';
         }
 
         function handleStudentRegisterSubmit(e) {
@@ -702,19 +713,6 @@
             const errBox = document.getElementById('regErrorBox');
             const errText = document.getElementById('regErrorText');
             errBox.classList.add('hidden');
-
-            const lockedStudentCodeOnPhone = localStorage.getItem('app_bound_student_code');
-
-            if (lockedStudentCodeOnPhone && lockedStudentCodeOnPhone !== code) {
-                const boundStudentExists = state.students.some(s => s.code === lockedStudentCodeOnPhone);
-                if (boundStudentExists) {
-                    errText.innerText = `عذراً! هذا الهاتف مقترن بالفعل بالكود (${lockedStudentCodeOnPhone}). يرجى مراجعة مسؤول النظام لفك اقتران الجهاز.`;
-                    errBox.classList.remove('hidden');
-                    return;
-                } else {
-                    localStorage.removeItem('app_bound_student_code');
-                }
-            }
 
             let student = state.students.find(s => s.code === code);
             const studentId = student ? student.id : 'std_' + Date.now();
@@ -728,6 +726,9 @@
 
             document.getElementById('studentRegisterModal').classList.add('hidden');
             loadStudentData();
+
+            // استكمال عملية تسجيل الحضور فوراً بعد حفظ البيانات
+            checkAndHandleUrlToken();
         }
 
         function switchRole(role) {
@@ -842,7 +843,7 @@
             }
 
             startDynamicQRGenerator();
-            alert("تم فتح الجلسة وبثها مباشرة لجميع أجهزة الطلاب!");
+            alert("تم فتح الجلسة وبثها مباشرة لجميع أجهزة الطلاب عبر كاميرا الموبايل العادية!");
         }
 
         function startDynamicQRGenerator() {
@@ -881,31 +882,15 @@
                 <body class="bg-slate-900 text-white min-h-screen flex flex-col items-center justify-center p-6 text-center select-none">
                     <div class="mb-4">
                         <h1 class="text-2xl md:text-3xl font-black text-amber-400">${state.activeLecture.title}</h1>
-                        <p class="text-xs text-slate-400 mt-1">امسح الرمز المباشر للتحقق من وجودك داخل القاعة</p>
-                    </div>
-
-                    <div class="flex gap-2 mb-4">
-                        <button onclick="changeSize(50)" class="bg-slate-800 hover:bg-slate-700 text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-700">+ تكبير الرمز</button>
-                        <button onclick="changeSize(-50)" class="bg-slate-800 hover:bg-slate-700 text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-700">- تصغير الرمز</button>
-                        <button onclick="document.documentElement.requestFullscreen()" class="bg-sky-600 hover:bg-sky-500 text-xs font-bold px-3 py-1.5 rounded-lg">ملء الشاشة</button>
+                        <p class="text-xs text-slate-400 mt-1">امسح الكود بكاميرا الموبايل العادية لتسجيل الحضور فوراً</p>
                     </div>
 
                     <div class="bg-white p-6 rounded-3xl shadow-2xl flex flex-col items-center border-4 border-amber-400">
-                        <img id="winQrImg" src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${state.currentDynamicToken}" class="w-72 h-72 object-contain transition-all duration-300">
-                        <span id="winQrCode" class="text-xl font-mono font-black text-slate-900 mt-3 bg-slate-200 px-4 py-1 rounded-xl">CODE: ${state.currentDynamicToken}</span>
+                        <img id="winQrImg" src="" class="w-72 h-72 object-contain transition-all duration-300">
+                        <span id="winQrCode" class="text-xl font-mono font-black text-slate-900 mt-3 bg-slate-200 px-4 py-1 rounded-xl">CODE: --</span>
                     </div>
 
                     <p class="text-xs text-emerald-400 font-bold mt-4 animate-pulse">● يتم تحديث الشفرة تلقائياً كل 5 ثوانٍ لمنع التصوير</p>
-
-                    <script>
-                        let size = 288;
-                        function changeSize(delta) {
-                            size = Math.max(150, Math.min(600, size + delta));
-                            const img = document.getElementById('winQrImg');
-                            img.style.width = size + 'px';
-                            img.style.height = size + 'px';
-                        }
-                    <\/script>
                 </body>
                 </html>
             `);
@@ -925,171 +910,6 @@
             document.getElementById('activeLectureState').classList.add('hidden');
             document.getElementById('adminActiveCard').classList.add('hidden');
             alert("تم إغلاق المحاضرة فوراً من كل أجهزة الطلاب!");
-        }
-
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371000;
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = 
-                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-                Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return R * c;
-        }
-
-        function submitAttendanceGPS() {
-            playSound('click');
-            const feedback = document.getElementById('attendanceFeedback');
-            feedback.classList.remove('hidden');
-
-            if (!state.activeLecture) {
-                feedback.innerText = "لا توجد جلسة نشطة متوفرة حالياً!";
-                feedback.className = "text-xs text-center font-bold bg-rose-500/10 text-rose-500 p-2.5 rounded-lg mt-2";
-                return;
-            }
-
-            const currentStudent = state.students.find(s => s.id === state.activeStudentId);
-            if (!currentStudent) {
-                feedback.innerText = "برجاء تسجيل بياناتك أولاً!";
-                feedback.className = "text-xs text-center font-bold bg-rose-500/10 text-rose-500 p-2.5 rounded-lg mt-2";
-                openStudentLoginModal();
-                return;
-            }
-
-            const existing = state.attendanceRecords.find(r => r.lectureId === state.activeLecture.id && r.studentId === currentStudent.id && r.status === 'حاضر');
-            if (existing) {
-                feedback.innerText = "لقد قمت بتسجيل حضورك بالفعل لهذا اليوم!";
-                feedback.className = "text-xs text-center font-bold bg-amber-500/10 text-amber-400 p-2.5 rounded-lg mt-2";
-                return;
-            }
-
-            feedback.innerText = "جاري الفحص الصارم للموقع الجغرافي داخل القاعة...";
-            feedback.className = "text-xs text-center font-bold bg-amber-500/10 text-amber-400 p-2.5 rounded-lg mt-2";
-
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                        const accuracy = pos.coords.accuracy;
-                        const dist = calculateDistance(
-                            state.activeLecture.lat, 
-                            state.activeLecture.lng, 
-                            pos.coords.latitude, 
-                            pos.coords.longitude
-                        );
-
-                        if (accuracy > 15) {
-                            feedback.innerText = `دقة إشارة الهاتف ضعيفة (${Math.round(accuracy)}m). يرجى الاقتراب من المحاضر أو مسح رمز QR المعروض.`;
-                            feedback.className = "text-xs text-center font-bold bg-rose-500/10 text-rose-500 p-2.5 rounded-lg mt-2";
-                            return;
-                        }
-
-                        if (dist > state.activeLecture.radius) {
-                            feedback.innerText = `عذراً! أنت خارج القاعة حالياً (المسافة: ${Math.round(dist)} متر). التسجيل مسموح من داخل الغرفة فقط.`;
-                            feedback.className = "text-xs text-center font-bold bg-rose-500/10 text-rose-500 p-2.5 rounded-lg mt-2";
-                            return;
-                        }
-
-                        const timestamp = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-                        const newRecord = {
-                            lectureId: state.activeLecture.id,
-                            studentId: currentStudent.id,
-                            timestamp: timestamp,
-                            distance: Math.round(dist),
-                            status: 'حاضر',
-                            method: 'GPS الصارم'
-                        };
-
-                        if (db) db.ref('attendanceRecords').push(newRecord);
-
-                        feedback.innerText = `تم توثيق حضورك الصارم بنجاح! (المسافة: ${Math.round(dist)}m)`;
-                        feedback.className = "text-xs text-center font-bold bg-emerald-500/10 text-emerald-400 p-2.5 rounded-lg mt-2";
-                    },
-                    (err) => {
-                        feedback.innerText = "تعذر التقاط موقعك الجغرافي. يرجى مسح رمز QR القاعة المباشر بدلاً من ذلك.";
-                        feedback.className = "text-xs text-center font-bold bg-rose-500/10 text-rose-500 p-2.5 rounded-lg mt-2";
-                    },
-                    { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
-                );
-            }
-        }
-
-        function openScannerModal() {
-            if (!state.activeLecture) {
-                alert("لا توجد جلسة حضور نشطة حالياً!");
-                return;
-            }
-            document.getElementById('scannerModal').classList.remove('hidden');
-            document.getElementById('scannerFeedback').classList.add('hidden');
-
-            if (typeof Html5Qrcode !== "undefined") {
-                try {
-                    if (!html5QrScanner) html5QrScanner = new Html5Qrcode("qr-reader");
-                    html5QrScanner.start(
-                        { facingMode: "environment" },
-                        { fps: 10, qrbox: { width: 200, height: 200 } },
-                        onScanSuccess
-                    ).catch(err => {
-                        console.log("تعذر فتح الكاميرا تلقائياً، يمكنك كتابة الكود يدوياً.");
-                    });
-                } catch(e) {}
-            }
-        }
-
-        function forceCloseScannerModal() {
-            const modal = document.getElementById('scannerModal');
-            modal.classList.add('hidden');
-            if (html5QrScanner) {
-                try {
-                    html5QrScanner.stop().then(() => html5QrScanner.clear()).catch(() => {});
-                } catch(e) {}
-            }
-        }
-
-        function processSuccessfulQRScan(method) {
-            const currentStudent = state.students.find(s => s.id === state.activeStudentId);
-            const timestamp = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-            
-            const newRecord = {
-                lectureId: state.activeLecture.id,
-                studentId: currentStudent.id,
-                timestamp: timestamp,
-                distance: 0,
-                status: 'حاضر',
-                method: method
-            };
-
-            if (db) db.ref('attendanceRecords').push(newRecord);
-
-            forceCloseScannerModal();
-            
-            const feedback = document.getElementById('attendanceFeedback');
-            feedback.classList.remove('hidden');
-            feedback.innerText = "تم التحقق المباشر عبر الـ QR وتسجيل الحضور بنجاح!";
-            feedback.className = "text-xs text-center font-bold bg-emerald-500/10 text-emerald-400 p-2.5 rounded-lg mt-2";
-        }
-
-        function onScanSuccess(decodedText) {
-            if (decodedText === state.currentDynamicToken) {
-                processSuccessfulQRScan('مسح QR القاعة');
-            } else {
-                const fb = document.getElementById('scannerFeedback');
-                fb.innerText = "رمز غير صحيح أو انتهت صلاحيته! تأكد من التوجيه نحو الشاشة مباشرة.";
-                fb.classList.remove('hidden');
-            }
-        }
-
-        function verifyManualToken() {
-            const inputVal = document.getElementById('manualTokenInput').value.trim();
-            if (inputVal === state.currentDynamicToken) {
-                processSuccessfulQRScan('رمز QR اليدوي');
-                document.getElementById('manualTokenInput').value = "";
-            } else {
-                const fb = document.getElementById('scannerFeedback');
-                fb.innerText = "الكود المدخل غير صحيح أو انتهت صلاحيته!";
-                fb.classList.remove('hidden');
-            }
         }
 
         function filterAndSelectStudent() {
@@ -1168,7 +988,7 @@
                         <td class="p-2 border font-bold">${idx + 1}</td>
                         <td class="p-2 border font-bold">${lec.title}</td>
                         <td class="p-2 border text-slate-500">${rec ? rec.timestamp : lec.date}</td>
-                        <td class="p-2 border font-mono">${isPresent ? (rec.method || 'GPS الصارم') : '--'}</td>
+                        <td class="p-2 border font-mono">${isPresent ? (rec.method || 'كاميرا الموبايل العادية') : '--'}</td>
                         <td class="p-2 border font-bold ${isPresent ? 'text-emerald-600' : 'text-rose-600'}">
                             ${isPresent ? 'حاضر' : 'غائب'}
                         </td>
@@ -1183,12 +1003,7 @@
 
             if (confirm(`تأكيد: هل تريد حذف الطالب (${student.name}) بالكامل لتفريغ السيرفر؟`)) {
                 if (db) db.ref('students/' + studentId).remove();
-
-                const boundCode = localStorage.getItem('app_bound_student_code');
-                if (boundCode === student.code) {
-                    localStorage.removeItem('app_bound_student_code');
-                }
-
+                localStorage.removeItem('app_bound_student_code');
                 document.getElementById('detailedReportContainer').classList.add('hidden');
                 document.getElementById('studentSearchInput').value = '';
                 alert("تم مسح الطالب بنجاح!");
@@ -1214,7 +1029,6 @@
                 alert("لا توجد محاضرة محددة لحذفها!");
                 return;
             }
-
             const lecId = sel.value;
             if (confirm(`تأكيد: هل تريد حذف المحاضرة المختارة نهائياً؟`)) {
                 if (db) db.ref('lecturesHistory/' + lecId).remove();
@@ -1242,7 +1056,7 @@
                         <td class="p-2 font-bold">${student ? student.name : '--'}</td>
                         <td class="p-2 font-mono">${student ? student.code : '--'}</td>
                         <td class="p-2 text-emerald-400">${r.timestamp}</td>
-                        <td class="p-2 font-mono text-amber-400">${r.method || 'GPS الصارم'}</td>
+                        <td class="p-2 font-mono text-amber-400">${r.method || 'كاميرا الموبايل العادية'}</td>
                     </tr>
                 `;
             }).join('');
@@ -1351,9 +1165,9 @@
                         <tr class="${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}">
                             <td class="p-2 border border-slate-300 font-bold">${idx + 1}</td>
                             <td class="p-2 border border-slate-300 font-bold">${std.name}</td>
-                            <td class="p-2 border border-slate-350 font-mono">${std.code}</td>
+                            <td class="p-2 border border-slate-300 font-mono">${std.code}</td>
                             <td class="p-2 border border-slate-300">${isPresent ? record.timestamp : '--'}</td>
-                            <td class="p-2 border border-slate-300 font-mono">${isPresent ? (record.method || 'GPS الصارم') : '--'}</td>
+                            <td class="p-2 border border-slate-300 font-mono">${isPresent ? (record.method || 'كاميرا الموبايل العادية') : '--'}</td>
                             <td class="p-2 border border-slate-300 text-center font-bold ${isPresent ? 'text-emerald-700' : 'text-rose-700'}">
                                 ${isPresent ? 'حاضر' : 'غائب'}
                             </td>
