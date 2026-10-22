@@ -178,7 +178,7 @@
                 <div id="adminActiveCard" class="hidden bg-slate-900 text-white rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
                     <div class="flex justify-between items-center border-b border-slate-800 pb-3">
                         <div>
-                            <span class="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-500/30">المباشر عبر ה-GPS</span>
+                            <span class="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded border border-emerald-500/30">المباشر عبر GPS</span>
                             <h3 id="adminActiveTitle" class="text-lg font-bold mt-1">--</h3>
                         </div>
                         <div class="flex items-center space-x-2 space-x-reverse">
@@ -240,8 +240,7 @@
                             <p id="repStudentCode" class="text-xs text-slate-500 dark:text-slate-400">الرقم الجامعي: --</p>
                         </div>
                         <div class="no-print flex flex-wrap gap-2 w-full md:w-auto">
-                            <button id="repUnlinkBtn" class="bg-amber-500 text-white text-xs font-bold px-3 py-2 rounded-xl transition">فك الجهاز</button>
-                            <button id="repManualBtn" class="bg-emerald-600 text-white text-xs font-bold px-3 py-2 rounded-xl transition">حضور يدوي</button>
+                            <button id="repUnlinkBtn" class="bg-amber-500 text-white text-xs font-bold px-3 py-2 rounded-xl transition hover:bg-amber-600">فك الجهاز</button>
                             <button onclick="window.print()" class="bg-brand-600 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition flex items-center space-x-1 space-x-reverse">
                                 <i class="fa-solid fa-print"></i>
                                 <span>طباعة التقرير</span>
@@ -305,7 +304,7 @@
                                     <th class="p-2.5">الكود</th>
                                     <th class="p-2.5">الحضور الأسبوعي</th>
                                     <th class="p-2.5">الحضور الشهري</th>
-                                    <th class="p-2.5 text-center">التقرير</th>
+                                    <th class="p-2.5 text-center">الإجراءات</th>
                                 </tr>
                             </thead>
                             <tbody id="allStudentsTableBody" class="divide-y divide-slate-100 dark:divide-slate-700">
@@ -484,7 +483,7 @@
             document.documentElement.classList.toggle('dark');
         }
 
-        // Get or Generate Unique Persistent Hardware Device UUID
+        // Generate Hardware Persistent Device Fingerprint
         function getDeviceHardwareUUID() {
             let deviceUUID = localStorage.getItem('app_device_uuid');
             if (!deviceUUID) {
@@ -500,10 +499,7 @@
             activeStudentId: null,
             activeLecture: null,
             adminGpsLocation: null,
-            students: JSON.parse(localStorage.getItem('app_students_db')) || [
-                { id: 'std_1', name: 'أحمد محمود علي', code: '2024001', deviceBound: true, deviceId: 'HW_DEFAULT' },
-                { id: 'std_2', name: 'سارة محمد حسان', code: '2024002', deviceBound: true, deviceId: 'HW_DEFAULT2' }
-            ],
+            students: JSON.parse(localStorage.getItem('app_students_db')) || [],
             lecturesHistory: JSON.parse(localStorage.getItem('app_lectures_db')) || [],
             attendanceRecords: JSON.parse(localStorage.getItem('app_attendance_db')) || []
         };
@@ -539,28 +535,28 @@
             const errEl = document.getElementById('regErrorText');
             errEl.classList.add('hidden');
 
-            const currentHardwareUUID = getDeviceHardwareUUID();
+            const currentHWUUID = getDeviceHardwareUUID();
             const boundCodeOnPhone = localStorage.getItem('app_bound_student_code');
 
-            // STRICT SINGLE DEVICE BINDING CHECK
+            // STRICT SINGLE ACCOUNT LOCKING PER PHONE
             if (boundCodeOnPhone && boundCodeOnPhone !== code) {
-                errEl.innerText = `عذراً! هذا الهاتف مقترن بالفعل بطالب صاحب الكود (${boundCodeOnPhone}). لا يمكنك التسجيل لزميلك من نفس الجهاز!`;
+                errEl.innerText = `عذراً! هذا الهاتف مقترن بالفعل بحساب طالب آخر (${boundCodeOnPhone}). لا يمكنك التسجيل لزميلك!`;
                 errEl.classList.remove('hidden');
                 return;
             }
 
             let student = state.students.find(s => s.code === code);
             if (student) {
-                if (student.deviceBound && student.deviceId && student.deviceId !== currentHardwareUUID) {
-                    errEl.innerText = `عذراً! حساب الطالب مرتبط بجهاز موبايل آخر. يرجى طلب فك الجهاز من الأدمن أولاً.`;
+                if (student.deviceBound && student.deviceId && student.deviceId !== currentHWUUID) {
+                    errEl.innerText = `عذراً! حساب الطالب مرتبط بموبايل آخر. يرجى طلب فك الجهاز من الأدمن أولاً.`;
                     errEl.classList.remove('hidden');
                     return;
                 }
                 student.name = name;
                 student.deviceBound = true;
-                student.deviceId = currentHardwareUUID;
+                student.deviceId = currentHWUUID;
             } else {
-                student = { id: 'std_' + Date.now(), name: name, code: code, deviceBound: true, deviceId: currentHardwareUUID };
+                student = { id: 'std_' + Date.now(), name: name, code: code, deviceBound: true, deviceId: currentHWUUID };
                 state.students.push(student);
             }
 
@@ -581,6 +577,7 @@
             }
             state.currentRole = role;
             updateRoleUI();
+            if (role === 'admin') renderPrintableSheet();
         }
 
         function verifyAdminPassword(e) {
@@ -593,6 +590,7 @@
                 document.getElementById('adminAuthError').classList.add('hidden');
                 document.getElementById('adminPasswordInput').value = '';
                 updateRoleUI();
+                renderPrintableSheet();
             } else {
                 document.getElementById('adminAuthError').classList.remove('hidden');
             }
@@ -638,7 +636,7 @@
         function fetchAdminLocation() {
             playSound('click');
             const statusEl = document.getElementById('adminGpsStatus');
-            statusEl.innerText = "جاري فتح الـ GPS في الموبايل...";
+            statusEl.innerText = "جاري التقاط إحداثيات الـ GPS...";
 
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
@@ -649,7 +647,7 @@
                     },
                     (err) => {
                         state.adminGpsLocation = { lat: 30.0444, lng: 31.2357 };
-                        statusEl.innerText = "موقع محاكاة افتراضي لقاعة المحاضرات (30.0444, 31.2357)";
+                        statusEl.innerText = "موقع افتراضي محاكاة القاعة (30.0444, 31.2357)";
                         statusEl.className = "text-xs font-bold text-amber-600 dark:text-amber-400";
                     },
                     { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
@@ -690,7 +688,7 @@
 
             populateReportLectureSelector();
             renderLiveFeed();
-            alert("تم فتح باب التسجيل بنجاح!");
+            alert("تم فتح باب التسجيل للمحاضرة بنجاح!");
         }
 
         function cancelActiveLecture() {
@@ -713,7 +711,7 @@
 
             const currentStudent = state.students.find(s => s.id === state.activeStudentId);
 
-            // Double Attendance Prevention
+            // DOUBLE REGISTRATION PREVENTION
             const existing = state.attendanceRecords.find(r => r.lectureId === state.activeLecture.id && r.studentId === currentStudent.id && r.status === 'حاضر');
             if (existing) {
                 feedback.innerText = "لقد قمت بتسجيل حضورك بالفعل لهذه المحاضرة!";
@@ -846,13 +844,16 @@
             }).join('');
         }
 
+        // FIXED UNLINK DEVICE FUNCTION
         function unlinkStudentDevice(studentId) {
             const student = state.students.find(s => s.id === studentId);
             if (student) {
                 student.deviceBound = false;
                 student.deviceId = null;
+                localStorage.removeItem('app_bound_student_code');
+                localStorage.removeItem('app_device_uuid');
                 localStorage.setItem('app_students_db', JSON.stringify(state.students));
-                alert(`تم فك ربط الجهاز للطالب ${student.name} بنجاح.`);
+                alert(`تم فك ربط الجهاز للطالب (${student.name}) بنجاح. يمكنه الآن الربط من جهاز جديد.`);
                 renderAllStudentsTable();
                 filterAndSelectStudent();
             }
@@ -898,9 +899,12 @@
                         <td class="p-2.5 text-xs font-mono text-slate-500">${s.code}</td>
                         <td class="p-2.5 font-bold text-emerald-600">${weeklyRatio}%</td>
                         <td class="p-2.5 font-bold text-brand-600">${ratio}%</td>
-                        <td class="p-2.5 text-center">
-                            <button onclick="selectAndShowStudent('${s.code}')" class="bg-brand-500/10 text-brand-600 dark:text-brand-400 hover:bg-brand-600 hover:text-white text-[10px] md:text-xs font-bold px-2.5 py-1 rounded-lg transition">
+                        <td class="p-2.5 text-center flex items-center justify-center gap-1">
+                            <button onclick="selectAndShowStudent('${s.code}')" class="bg-brand-500/10 text-brand-600 dark:text-brand-400 hover:bg-brand-600 hover:text-white text-[10px] md:text-xs font-bold px-2 py-1 rounded-lg transition">
                                 التقرير
+                            </button>
+                            <button onclick="unlinkStudentDevice('${s.id}')" class="bg-amber-500/10 text-amber-600 hover:bg-amber-600 hover:text-white text-[10px] md:text-xs font-bold px-2 py-1 rounded-lg transition" title="فك الجهاز">
+                                فك الجهاز
                             </button>
                         </td>
                     </tr>
@@ -934,12 +938,27 @@
             sel.innerHTML = state.lecturesHistory.map(l => `<option value="${l.id}">${l.title} - (${l.date})</option>`).join('');
         }
 
-        // UPDATED DETAILED PRINTABLE LECTURE SHEET LOGIC
+        // FULLY FIXED PRINTABLE LECTURE SHEET LOGIC
         function renderPrintableSheet() {
-            const selLecId = document.getElementById('lectureReportSelector').value;
+            const sel = document.getElementById('lectureReportSelector');
+            if (!sel) return;
+
+            let selLecId = sel.value;
+            if (!selLecId && state.lecturesHistory.length > 0) {
+                selLecId = state.lecturesHistory[0].id;
+            }
+
             const lecture = state.lecturesHistory.find(l => l.id === selLecId);
 
-            if (!lecture) return;
+            if (!lecture) {
+                document.getElementById('printLectureTitleHeader').innerText = "اسم المحاضرة: لم ترصد أي محاضرة بعد";
+                document.getElementById('printLectureDateHeader').innerText = "--";
+                document.getElementById('printableSheetBody').innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-500 font-bold">لا توجد بيانات محاضرات متوفرة حالياً</td></tr>';
+                document.getElementById('printPresentCount').innerText = 0;
+                document.getElementById('printAbsentCount').innerText = 0;
+                document.getElementById('printTotalStudentsCount').innerText = state.students.length;
+                return;
+            }
 
             // Set Title & Date
             document.getElementById('printLectureTitleHeader').innerText = `اسم المحاضرة: ${lecture.title}`;
@@ -948,24 +967,28 @@
             const tbody = document.getElementById('printableSheetBody');
             let presentCounter = 0;
 
-            tbody.innerHTML = state.students.map((std, idx) => {
-                const record = state.attendanceRecords.find(r => r.lectureId === selLecId && r.studentId === std.id && r.status === 'حاضر');
-                const isPresent = !!record;
-                if (isPresent) presentCounter++;
+            if (state.students.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-slate-500 font-bold">لا يوجد طلاب مسجلين بالدفعة بعد</td></tr>';
+            } else {
+                tbody.innerHTML = state.students.map((std, idx) => {
+                    const record = state.attendanceRecords.find(r => r.lectureId === selLecId && r.studentId === std.id && r.status === 'حاضر');
+                    const isPresent = !!record;
+                    if (isPresent) presentCounter++;
 
-                return `
-                    <tr class="${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}">
-                        <td class="p-2 border border-slate-300 font-bold">${idx + 1}</td>
-                        <td class="p-2 border border-slate-300 font-bold">${std.name}</td>
-                        <td class="p-2 border border-slate-300 font-mono">${std.code}</td>
-                        <td class="p-2 border border-slate-300">${isPresent ? record.timestamp : '--'}</td>
-                        <td class="p-2 border border-slate-300 font-mono">${isPresent ? (record.method || 'GPS') : '--'}</td>
-                        <td class="p-2 border border-slate-300 text-center font-bold ${isPresent ? 'text-emerald-700' : 'text-rose-700'}">
-                            ${isPresent ? 'حاضر' : 'غائب'}
-                        </td>
-                    </tr>
-                `;
-            }).join('');
+                    return `
+                        <tr class="${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}">
+                            <td class="p-2 border border-slate-300 font-bold">${idx + 1}</td>
+                            <td class="p-2 border border-slate-300 font-bold">${std.name}</td>
+                            <td class="p-2 border border-slate-300 font-mono">${std.code}</td>
+                            <td class="p-2 border border-slate-300">${isPresent ? record.timestamp : '--'}</td>
+                            <td class="p-2 border border-slate-300 font-mono">${isPresent ? (record.method || 'GPS') : '--'}</td>
+                            <td class="p-2 border border-slate-300 text-center font-bold ${isPresent ? 'text-emerald-700' : 'text-rose-700'}">
+                                ${isPresent ? 'حاضر' : 'غائب'}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
 
             // Set Statistics Grid Values
             document.getElementById('printPresentCount').innerText = presentCounter;
