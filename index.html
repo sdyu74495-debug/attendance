@@ -6,7 +6,6 @@
     <title>نظام تسجيل الحضور الذكي - Geofenced Attendance System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- مكتبة قراءة الـ QR عبر الكاميرا -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script>
         tailwind.config = {
@@ -198,7 +197,6 @@
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-                        <!-- Dynamic QR Code Display -->
                         <div class="bg-white p-4 rounded-2xl flex flex-col items-center justify-center text-slate-900 shadow-inner space-y-3">
                             <span class="text-xs font-bold text-slate-600 text-center">اعرض هذا الرمز على شاشة القاعة (يتغير كل 5 ثوانٍ):</span>
                             
@@ -213,7 +211,6 @@
                             </button>
                         </div>
 
-                        <!-- Live Attendance Stream -->
                         <div class="overflow-x-auto max-h-64 overflow-y-auto">
                             <table class="w-full text-right text-xs">
                                 <thead class="bg-slate-800 text-slate-300 sticky top-0">
@@ -437,7 +434,6 @@
     <div id="scannerModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden no-print">
         <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-slate-200 dark:border-slate-700 space-y-4 relative text-center">
             
-            <!-- زر إغلاق صريح ومباشر فوق كل المكونات -->
             <button type="button" onclick="closeScannerModal()" class="absolute top-3 left-3 w-9 h-9 rounded-full bg-slate-200 hover:bg-rose-500 hover:text-white transition flex items-center justify-center shadow font-bold text-slate-900 z-50 cursor-pointer">
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
@@ -447,10 +443,8 @@
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">وجه كاميرا هاتف نحو الشاشة لتأكيد وجودك داخل الغرفة</p>
             </div>
 
-            <!-- الكاميرا المباشرة -->
             <div id="qr-reader" class="overflow-hidden rounded-2xl border-2 border-dashed border-brand-500 bg-slate-100 dark:bg-slate-900 min-h-[220px]"></div>
 
-            <!-- خيار إدخال الرمز يدوياً في حالة عدم عمل الكاميرا -->
             <div class="border-t border-slate-200 dark:border-slate-700 pt-3 text-right">
                 <label class="block text-[11px] font-bold text-slate-500 mb-1">أو ادخل الكود المعروض أسفل الرمز على الشاشة:</label>
                 <div class="flex gap-2">
@@ -489,7 +483,6 @@
                     <input type="text" id="regStudentCode" required placeholder="مثال: 2024001" class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2 text-sm outline-none">
                 </div>
 
-                <!-- تم إغلاق وإلغاء زر فك الحظر تماماً هنا لمنع الطالب من فك قفل جهازه -->
                 <div id="regErrorBox" class="hidden bg-rose-50 border border-rose-200 rounded-xl p-3">
                     <p id="regErrorText" class="text-xs font-bold text-rose-600 text-center leading-relaxed"></p>
                 </div>
@@ -817,7 +810,7 @@
                 <head>
                     <meta charset="UTF-8">
                     <title>شاشة عرض رمز QR الحضور - البروجكتور</title>
-                    <script src="https://cdn.tailwindcss.com"></script>
+                    <script src="https://cdn.tailwindcss.com"><\/script>
                     <style>
                         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@700;900&display=swap');
                         body { font-family: 'Tajawal', sans-serif; }
@@ -832,7 +825,7 @@
                     <div class="flex gap-2 mb-4">
                         <button onclick="changeSize(50)" class="bg-slate-800 hover:bg-slate-700 text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-700">+ تكبير الرمز</button>
                         <button onclick="changeSize(-50)" class="bg-slate-800 hover:bg-slate-700 text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-700">- تصغير الرمز</button>
-                        <button onclick="document.documentElement.requestFullscreen()" class="bg-brand-600 hover:bg-brand-500 text-xs font-bold px-3 py-1.5 rounded-lg">ملء الشاشة</button>
+                        <button onclick="document.documentElement.requestFullscreen()" class="bg-sky-600 hover:bg-sky-500 text-xs font-bold px-3 py-1.5 rounded-lg">ملء الشاشة</button>
                     </div>
 
                     <div class="bg-white p-6 rounded-3xl shadow-2xl flex flex-col items-center border-4 border-amber-400">
@@ -918,7 +911,7 @@
                         );
 
                         if (accuracy > 15) {
-                            feedback.innerText = `دقة إشارة الهاتف ضعيفة (${Math.round(accuracy)}m). يرجى الاقتراب من المحاضر أو مسح رمز הـ QR المعروض.`;
+                            feedback.innerText = `دقة إشارة الهاتف ضعيفة (${Math.round(accuracy)}m). يرجى الاقتراب من المحاضر أو مسح رمز QR المعروض.`;
                             feedback.className = "text-xs text-center font-bold bg-rose-500/10 text-rose-500 p-2.5 rounded-lg mt-2";
                             return;
                         }
